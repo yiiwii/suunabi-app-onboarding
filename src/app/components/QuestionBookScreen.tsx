@@ -4,6 +4,8 @@ import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
 import { BottomNavBar, BOTTOM_NAV_HEIGHT } from './BottomNavBar';
 import threadArrow from '../../assets/thread-arrow.png';
 
+const imgPartyPopper = 'https://www.figma.com/api/mcp/asset/ac86bf92-3d25-464e-81e9-a28a7b251dc2';
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type CardStatus = 'cleared' | 'uncleared' | 'inProgress' | 'correct' | 'incorrect';
@@ -302,10 +304,12 @@ function QuestionThreadView({ thread, onLongPress, onNavigate }: { thread: Quest
             {/* Status badge */}
             {isCleared ? (
               <div className="flex h-[20px] items-center rounded-[5px] bg-[#249176] pl-[4px]">
-                <span className="text-[11px] leading-none mr-[2px]">🎉</span>
-                <span className="font-['Hiragino_Sans',sans-serif] font-bold text-[10px] text-white whitespace-nowrap">
-                  クリア済み
-                </span>
+                <div className="flex items-center gap-[2px] shrink-0">
+                  <img src={imgPartyPopper} alt="" className="w-[12px] h-[12px] shrink-0" />
+                  <span className="font-['Hiragino_Sans',sans-serif] font-bold text-[10px] text-white whitespace-nowrap">
+                    クリア済み
+                  </span>
+                </div>
                 <span className="font-['Rco',sans-serif] text-[14px] leading-none w-[14px] text-center text-white">
                   {'\uE901'}
                 </span>
