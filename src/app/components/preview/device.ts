@@ -1,0 +1,16 @@
+export const IOS_DEVICE_WIDTH = 375
+export const IOS_DEVICE_HEIGHT = 812
+export const IOS_FRAME_PADDING = 24
+export const IOS_FRAME_RADIUS = 52
+export const IOS_SCREEN_RADIUS = 44
+export const IOS_STATUS_BAR_HEIGHT = 44
+export const IOS_SAFE_AREA_TOP = 44
+export const IOS_SAFE_AREA_BOTTOM = 34
+export const IOS_DYNAMIC_ISLAND_WIDTH = 162
+export const IOS_DYNAMIC_ISLAND_HEIGHT = 32
+export const IOS_DYNAMIC_ISLAND_TOP = 6
+export const IOS_HOME_INDICATOR_WIDTH = 134
+export const IOS_HOME_INDICATOR_HEIGHT = 5
+export const IOS_HOME_INDICATOR_BOTTOM = 12
+export const IOS_STATUS_BAR_LEADING = 27
+export const IOS_STATUS_BAR_TRAILING = 27
