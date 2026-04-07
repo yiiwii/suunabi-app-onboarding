@@ -19,24 +19,6 @@ export const allScreens: ScreenRouteInfo[] = [
     index: 1,
   },
   {
-    path: '/question-folder/quadratic',
-    name: 'Folder: Quadratic',
-    nameJa: '一元二次方程',
-    index: 2,
-  },
-  {
-    path: '/home',
-    name: 'Home (Legacy)',
-    nameJa: 'ホーム（旧）',
-    index: 3,
-  },
-  {
-    path: '/home-promo',
-    name: 'Home Promo',
-    nameJa: 'ホーム（販促）',
-    index: 4,
-  },
-  {
     path: '/settings',
     name: 'Settings',
     nameJa: '設定',

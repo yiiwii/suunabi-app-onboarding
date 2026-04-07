@@ -14,11 +14,8 @@ import DiscoverySourceSelection from "../components/DiscoverySourceSelection";
 import CompletionSuccess from "../components/CompletionSuccess";
 import TrialPaywall from "../components/TrialPaywall";
 import TrialPaywallB from "../components/TrialPaywallB";
-import ProductHome from "../components/ProductHome";
-import ProductHomePromo from "../components/ProductHomePromo";
 import ProductHomeV2 from "../components/ProductHomeV2";
 import QuestionBookScreen from "../components/QuestionBookScreen";
-import QuestionFolderScreen from "../components/QuestionFolderScreen";
 import SettingsScreen from "../components/SettingsScreen";
 import SettingsScreenUnsubscribed from "../components/SettingsScreenUnsubscribed";
 import InviteFriendsScreen from "../components/InviteFriendsScreen";
@@ -46,24 +43,12 @@ export function createOnboardingRouter(showDebug = true, deviceWidth = 375) {
           Component: Splash,
         },
         {
-          path: "home",
-          Component: ProductHome,
-        },
-        {
           path: "home-v2",
           Component: ProductHomeV2,
         },
         {
           path: "question-book",
           Component: QuestionBookScreen,
-        },
-        {
-          path: "question-folder/:categoryId",
-          Component: QuestionFolderScreen,
-        },
-        {
-          path: "home-promo",
-          Component: ProductHomePromo,
         },
         {
           path: "settings",
