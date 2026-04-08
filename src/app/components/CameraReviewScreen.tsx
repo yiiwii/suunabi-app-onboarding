@@ -650,7 +650,7 @@ export default function CameraReviewScreen() {
       >
         <div className="absolute left-[20px] right-[20px] top-[10px]">
           <p className="truncate font-['Hiragino_Sans',sans-serif] text-[14px] text-center leading-none" style={{ color: 'rgba(13,14,18,0.6)' }}>
-            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
+            {'1枠につき1問'}
           </p>
         </div>
 
