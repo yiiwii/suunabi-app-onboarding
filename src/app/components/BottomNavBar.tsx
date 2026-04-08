@@ -13,8 +13,8 @@ export function BottomNavBar() {
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-30 border-t border-[rgba(13,14,18,0.1)] bg-[#f2fbff] backdrop-blur-[50px]"
-      style={{ paddingBottom: IOS_SAFE_AREA_BOTTOM }}
+      className="absolute inset-x-0 bottom-0 z-30 overflow-hidden border-t border-[rgba(13,14,18,0.12)] bg-[#f2fbff] backdrop-blur-[50px]"
+      style={{ minHeight: BOTTOM_NAV_HEIGHT, paddingBottom: IOS_SAFE_AREA_BOTTOM }}
     >
       <div className="flex h-[49px] items-start">
         {/* ホーム */}
@@ -23,35 +23,35 @@ export function BottomNavBar() {
           className="flex flex-1 flex-col items-center justify-center gap-[3px] py-[7px]"
         >
           <span
-            className="font-['Rco',sans-serif] text-[24px] leading-[40px] tracking-[-0.26px]"
+            className="flex h-[25px] w-[20px] items-center justify-center font-['Rco',sans-serif] text-[24px] leading-none tracking-[-0.26px]"
             style={{ color: isHome ? '#339bc9' : 'rgba(13,14,18,0.4)' }}
           >
             {'\uE953'}
           </span>
           <span
             className="text-[10px] font-medium leading-[10px] tracking-[0.12px]"
-            style={{ color: isHome ? '#2389b9' : 'rgba(13,14,18,0.35)' }}
+            style={{ color: isHome ? '#339bc9' : 'rgba(13,14,18,0.3)' }}
           >
             ホーム
           </span>
         </button>
 
-        {/* 問題ノート */}
+        {/* 過去問ノート */}
         <button
           onClick={() => navigate('/question-book')}
           className="flex flex-1 flex-col items-center justify-center gap-[3px] py-[7px]"
         >
           <span
-            className="font-['Rco',sans-serif] text-[24px] leading-[40px] tracking-[-0.26px]"
+            className="flex h-[25px] w-[20px] items-center justify-center font-['Rco',sans-serif] text-[24px] leading-none tracking-[-0.26px]"
             style={{ color: isBook ? '#339bc9' : 'rgba(13,14,18,0.4)' }}
           >
             {'\uE98F'}
           </span>
           <span
             className="text-[10px] font-medium leading-[10px] tracking-[0.12px]"
-            style={{ color: isBook ? '#2389b9' : 'rgba(13,14,18,0.35)' }}
+            style={{ color: isBook ? '#339bc9' : 'rgba(13,14,18,0.3)' }}
           >
-            問題ノート
+            過去問ノート
           </span>
         </button>
 
@@ -61,14 +61,14 @@ export function BottomNavBar() {
           className="flex flex-1 flex-col items-center justify-center gap-[3px] py-[7px]"
         >
           <span
-            className="font-['Rco',sans-serif] text-[24px] leading-[40px] tracking-[-0.26px]"
+            className="flex h-[25px] w-[20px] items-center justify-center font-['Rco',sans-serif] text-[24px] leading-none tracking-[-0.26px]"
             style={{ color: isSettings ? '#339bc9' : 'rgba(13,14,18,0.4)' }}
           >
             {'\uE90D'}
           </span>
           <span
             className="text-[10px] font-medium leading-[10px] tracking-[0.12px]"
-            style={{ color: isSettings ? '#2389b9' : 'rgba(13,14,18,0.35)' }}
+            style={{ color: isSettings ? '#339bc9' : 'rgba(13,14,18,0.3)' }}
           >
             設定
           </span>

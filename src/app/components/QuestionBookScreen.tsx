@@ -4,7 +4,7 @@ import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
 import { BottomNavBar, BOTTOM_NAV_HEIGHT } from './BottomNavBar';
 import threadArrow from '../../assets/thread-arrow.png';
 
-const imgPartyPopper = 'https://www.figma.com/api/mcp/asset/ac86bf92-3d25-464e-81e9-a28a7b251dc2';
+import imgPartyPopper from '../../assets/qbook-party-popper.svg';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -477,16 +477,16 @@ function FilterPill({
   return (
     <button
       onClick={onClick}
-      className={`h-[36px] rounded-full flex items-center gap-[4px] px-[10px] text-[12px] leading-normal whitespace-nowrap transition-colors ${
+      className={`flex h-[36px] items-center gap-[4px] rounded-full px-[10px] text-[12px] leading-none whitespace-nowrap transition-colors ${
         active
-          ? 'bg-[rgba(35,137,185,0.12)]'
-          : ''
+          ? 'bg-[rgba(51,155,201,0.2)] text-[#0371a4]'
+          : 'bg-white text-[rgba(13,14,18,0.4)]'
       }`}
     >
-      <span className={`font-['Hiragino_Sans',sans-serif] ${active ? 'font-bold text-[#0371a4]' : 'font-normal text-[rgba(13,14,18,0.4)]'}`}>
+      <span className="font-['Hiragino_Sans',sans-serif] font-normal">
         {label}
       </span>
-      <span className={`font-['Hiragino_Sans',sans-serif] font-bold ${active ? 'text-[#0371a4]' : 'text-[rgba(13,14,18,0.35)]'}`}>
+      <span className={`font-['Hiragino_Sans',sans-serif] font-bold ${active ? 'text-[#0371a4]' : 'text-[rgba(13,14,18,0.6)]'}`}>
         {count}
       </span>
     </button>
@@ -564,10 +564,9 @@ function ContentList({
 
 // Layout constants (from Figma)
 const STATUS_BAR = IOS_SAFE_AREA_TOP;     // 44px
-const TITLE_ROW = 80;                      // large title area
-const TAB_BAR = 44;                        // tab bar
-const FILTER_BAR = 54;                     // filter pills row
-const CONTENT_TOP = STATUS_BAR + TITLE_ROW + TAB_BAR + FILTER_BAR; // 222px
+const TITLE_ROW = 80;                      // header row
+const FILTER_BAR = 60;                     // filter pills row
+const CONTENT_TOP = STATUS_BAR + TITLE_ROW + FILTER_BAR; // 184px
 
 function getCounts(threads: QuestionThread[]) {
   return {
@@ -643,40 +642,42 @@ export default function QuestionBookScreen() {
       {/* ── Header (fixed) ───────────────────────────────────────────────── */}
       <div className="absolute inset-x-0 top-0 z-10 flex flex-col overflow-hidden">
 
-        {/* Status bar + large title + tabs (all blue) */}
-        <div className="bg-[#2389b9] flex flex-col" style={{ paddingTop: STATUS_BAR }}>
-          <div className="flex h-[80px] items-end justify-between pb-[16px] px-[20px]">
-            <span className="font-['Hiragino_Sans',sans-serif] font-bold text-[24px] leading-normal text-white">
-              問題ノート
-            </span>
-          </div>
+        {/* Status bar + tabs at title height (matches Home V2 / Settings blue band) */}
+        <div className="flex flex-col bg-[#339bc9]" style={{ paddingTop: STATUS_BAR }}>
 
-          {/* Tab bar — inside blue header */}
-          <div className="flex h-[44px] items-stretch">
-            {/* カテゴリー */}
+          {/* Tab bar */}
+          <div className="flex h-[80px] items-stretch">
+            {/* 質問履歴 */}
             <button
               onClick={() => setActiveTab('categories')}
-              className={`flex flex-1 items-center px-[20px] text-[14px] transition-colors ${
+              className={`relative flex h-[44px] flex-1 items-center justify-center self-end border-b-[3px] px-[20px] transition-colors ${
                 activeTab === 'categories'
-                  ? 'border-b-2 border-white font-bold text-white'
-                  : 'font-normal text-[rgba(255,255,255,0.5)]'
+                  ? 'border-[#f2fbff] text-[#f2fbff]'
+                  : 'border-[#66b7d5] text-[#f2fbff]'
               }`}
             >
-              <span className="font-['Hiragino_Sans',sans-serif]">カテゴリー</span>
+              <span className={`flex items-center justify-center gap-[10px] text-center ${activeTab === 'categories' ? '' : 'opacity-60'}`}>
+                <span className="font-['Rco',sans-serif] text-[16px] leading-[21px] tracking-[-0.15px]">
+                  {activeTab === 'categories' ? '\uE941' : '\uE940'}
+                </span>
+                <span className={`font-['Hiragino_Sans',sans-serif] text-[14px] leading-none ${activeTab === 'categories' ? 'font-bold' : 'font-normal'}`}>質問履歴</span>
+              </span>
             </button>
             {/* お気に入り */}
             <button
               onClick={() => setActiveTab('favorites')}
-              className={`flex flex-1 items-center gap-[4px] px-[20px] text-[14px] transition-colors ${
+              className={`relative flex h-[44px] flex-1 items-center justify-center self-end border-b-[3px] px-[20px] transition-colors ${
                 activeTab === 'favorites'
-                  ? 'border-b-2 border-white font-bold text-white'
-                  : 'font-normal text-[rgba(255,255,255,0.5)]'
+                  ? 'border-[#f2fbff] text-[#f2fbff]'
+                  : 'border-[#66b7d5] text-[#f2fbff]'
               }`}
             >
-              <span className={`font-['Rco',sans-serif] text-[16px] leading-[21px] tracking-[-0.15px]`}>
-                {'\uE9F0'}
+              <span className={`flex items-center justify-center gap-[4px] text-center ${activeTab === 'favorites' ? '' : 'opacity-60'}`}>
+                <span className="font-['Rco',sans-serif] text-[16px] leading-[21px] tracking-[-0.15px]">
+                  {activeTab === 'favorites' ? '\uE9EF' : '\uE9F0'}
+                </span>
+                <span className={`font-['Hiragino_Sans',sans-serif] text-[14px] leading-none ${activeTab === 'favorites' ? 'font-bold' : 'font-normal'}`}>お気に入り</span>
               </span>
-              <span className="font-['Hiragino_Sans',sans-serif]">お気に入り</span>
             </button>
           </div>
         </div>
@@ -685,7 +686,7 @@ export default function QuestionBookScreen() {
         {(() => {
           const counts = getCounts(activeTab === 'favorites' ? favThreadList : allThreadList);
           return (
-            <div className="flex items-center gap-[8px] bg-white px-[16px] py-[12px]">
+            <div className="flex h-[60px] items-center gap-[8px] bg-white px-[16px] py-[12px]">
               <FilterPill label="すべて" count={counts.total} active={filter === 'all'} onClick={() => setFilter('all')} />
               <FilterPill label="未クリア" count={counts.uncleared} active={filter === 'uncleared'} onClick={() => setFilter('uncleared')} />
               <FilterPill label="クリア済み" count={counts.cleared} active={filter === 'cleared'} onClick={() => setFilter('cleared')} />

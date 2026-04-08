@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { IOS_SAFE_AREA_TOP } from './preview/device';
+import { useStatusBar } from './preview/StatusBarContext';
 
-// Figma assets (valid 7 days)
-const imgBackground = 'https://www.figma.com/api/mcp/asset/745b7a54-fe64-45f5-a38d-5698761fe9a3';
-const imgSubtract = 'https://www.figma.com/api/mcp/asset/627a3b4c-8063-44a1-b370-f9ffe4218206';
-const imgCornerTL = 'https://www.figma.com/api/mcp/asset/27168271-f9b7-4b7d-864f-51479d341d89';
-const imgCornerTR = 'https://www.figma.com/api/mcp/asset/5c86957b-7a2e-4fb9-afb8-254604850743';
-const imgFocus = 'https://www.figma.com/api/mcp/asset/49016abb-5395-4e89-810a-c5d1c969c3a6';
-const imgShutterButton = 'https://www.figma.com/api/mcp/asset/996233e9-2bff-4d37-923f-21148dbfb19d';
+import imgBackground   from '../../assets/camera-background.png';
+import imgSubtract     from '../../assets/camera-subtract.svg';
+import imgCornerTL     from '../../assets/camera-corner-tl.svg';
+import imgCornerTR     from '../../assets/camera-corner-tr.svg';
+import imgFocus        from '../../assets/camera-focus.svg';
+import imgShutterButton from '../../assets/camera-shutter.svg';
 
 const CAMERA_H = 559; // px — height of the dark camera area
 const MODES = ['問題の解答', '採点する', '空欄問題の解答'] as const;
@@ -17,6 +17,7 @@ const MODE_SPACING = 120; // px between mode centers
 export default function CameraScreen() {
   const navigate = useNavigate();
   const [mode, setMode] = useState(1); // default: 採点する
+  useStatusBar({ light: true });
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-white">

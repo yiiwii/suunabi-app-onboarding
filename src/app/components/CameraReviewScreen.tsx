@@ -1,78 +1,239 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
+import { useStatusBar } from './preview/StatusBarContext';
 
-// Figma assets
-const imgSubtract   = 'https://www.figma.com/api/mcp/asset/926d1d48-9752-439a-b4c2-6c3311d1a844';
-const imgCornerTL   = 'https://www.figma.com/api/mcp/asset/7c855d4d-5ced-4e60-a0bb-6fdddfd1fad3';
-const imgCornerTR   = 'https://www.figma.com/api/mcp/asset/58e06c16-3072-4278-b1bb-19dcccc3a2ef';
-
-const CAMERA_H = 559; // dark photo area height
+const CAMERA_H  = 559;
+const CAMERA_W  = 375;
+const MIN_SIZE  = 60;
+const BRAND_BLUE = '#339bc9';
 
 interface Region {
   id: number;
-  // absolute px within camera area
   left: number;
   top: number;
   width: number;
   height: number;
 }
 
-// Preset positions (from Figma)
-const SINGLE_REGIONS: Region[]   = [{ id: 1, left: 28,    top: 116.5, width: 320,     height: 119    }];
-const MULTI_PRESETS:  Region[]   = [
-  { id: 1, left: 28,    top: 116.5, width: 320,     height: 119    },
-  { id: 2, left: 20.76, top: 253.5, width: 249.383, height: 91.683 },
-];
+type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se';
 
-let nextId = 3;
-
-// Generates a new region stacked below the last one
-function nextRegion(regions: Region[]): Region {
-  const last = regions[regions.length - 1];
-  const top  = last.top + last.height + 14;
-  return { id: nextId++, left: 28, top, width: 260, height: 90 };
+interface Interaction {
+  type: 'drag' | 'resize';
+  id: number;
+  handle?: ResizeHandle;
+  startClientX: number;
+  startClientY: number;
+  startRegion: Region;
 }
 
+const INITIAL_REGION: Region = {
+  id: 1,
+  left: Math.round((CAMERA_W - 320) / 2),
+  top: Math.round((CAMERA_H - 120) / 2),
+  width: 320,
+  height: 120,
+};
+
+let nextId = 2;
+
+function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+
+function overlaps(a: Region, b: Region): boolean {
+  return (
+    a.left           < b.left + b.width  &&
+    a.left + a.width > b.left            &&
+    a.top            < b.top  + b.height &&
+    a.top  + a.height > b.top
+  );
+}
+
+function overlapsAny(region: Region, regions: Region[], ignoreId?: number): boolean {
+  return regions.some((other) => other.id !== ignoreId && overlaps(region, other));
+}
+
+function isWithinBounds(region: Region): boolean {
+  return (
+    region.left >= 0 &&
+    region.top >= 0 &&
+    region.left + region.width <= CAMERA_W &&
+    region.top + region.height <= CAMERA_H
+  );
+}
+
+function compareCandidate(a: Region, b: Region, targetLeft: number, targetTop: number): number {
+  const aDx = a.left - targetLeft;
+  const aDy = a.top - targetTop;
+  const bDx = b.left - targetLeft;
+  const bDy = b.top - targetTop;
+  const aDist = (aDx * aDx) + (aDy * aDy);
+  const bDist = (bDx * bDx) + (bDy * bDy);
+
+  if (aDist !== bDist) return aDist - bDist;
+  if (Math.abs(aDy) !== Math.abs(bDy)) return Math.abs(aDy) - Math.abs(bDy);
+  if (Math.abs(aDx) !== Math.abs(bDx)) return Math.abs(aDx) - Math.abs(bDx);
+  if (a.top !== b.top) return a.top - b.top;
+  return a.left - b.left;
+}
+
+function findNearestValidPlacement(region: Region, regions: Region[]): Region | null {
+  let best: Region | null = null;
+  const maxLeft = CAMERA_W - region.width;
+  const maxTop = CAMERA_H - region.height;
+
+  for (let top = 0; top <= maxTop; top += 1) {
+    for (let left = 0; left <= maxLeft; left += 1) {
+      const candidate = { ...region, left, top };
+      if (overlapsAny(candidate, regions, region.id)) continue;
+      if (!best || compareCandidate(candidate, best, region.left, region.top) < 0) {
+        best = candidate;
+      }
+    }
+  }
+
+  return best;
+}
+
+function resolveRegionRelease(region: Region, regions: Region[], fallbackRegion?: Region): Region {
+  if (isWithinBounds(region) && !overlapsAny(region, regions, region.id)) {
+    return region;
+  }
+
+  const snapped = isWithinBounds(region)
+    ? findNearestValidPlacement(region, regions)
+    : null;
+
+  if (snapped) {
+    return snapped;
+  }
+
+  if (
+    fallbackRegion &&
+    isWithinBounds(fallbackRegion) &&
+    !overlapsAny(fallbackRegion, regions, region.id)
+  ) {
+    return fallbackRegion;
+  }
+
+  return region;
+}
+
+function createNextRegion(regions: Region[]): Region | null {
+  const w = 120;
+  const h = 120;
+  const left = Math.round((CAMERA_W - w) / 2);
+  const top = Math.round((CAMERA_H - h) / 2);
+  const candidate: Region = { id: nextId++, left, top, width: w, height: h };
+  const resolved = overlapsAny(candidate, regions)
+    ? findNearestValidPlacement(candidate, regions)
+    : candidate;
+  return resolved ? { ...resolved, id: candidate.id } : null;
+}
+
+
 // ── Corner bracket overlay ────────────────────────────────────────────────────
-function CornerBrackets({ width, height }: { width: number; height: number }) {
-  const size = 46;
-  const off  = -1.5;
+function CornerStroke({
+  color,
+  style,
+}: {
+  color: string;
+  style: React.CSSProperties;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="absolute pointer-events-none"
+      style={style}
+      width="43"
+      height="43"
+      viewBox="0 0 46 46"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M44.5 1.5H21.5C10.4543 1.5 1.5 10.4543 1.5 21.5V44.5"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CornerBrackets({ active }: { active: boolean }) {
+  const size = 43;
+  const off = -1.5;
+  const color = active ? BRAND_BLUE : '#ffffff';
+
   return (
     <>
-      {/* TL */}
-      <img src={imgCornerTL} alt="" className="absolute pointer-events-none"
-        style={{ left: off, top: off, width: size, height: size }} />
-      {/* TR */}
-      <img src={imgCornerTR} alt="" className="absolute pointer-events-none"
-        style={{ right: off, top: off, width: size, height: size, transform: 'scaleX(-1)' }} />
-      {/* BL */}
-      <img src={imgCornerTL} alt="" className="absolute pointer-events-none"
-        style={{ left: off, bottom: off, width: size, height: size, transform: 'scaleY(-1)' }} />
-      {/* BR */}
-      <img src={imgCornerTR} alt="" className="absolute pointer-events-none"
-        style={{ right: off, bottom: off, width: size, height: size, transform: 'scale(-1,-1)' }} />
-      {/* suppress unused-var warnings */}
-      <span style={{ display: 'none' }}>{width}{height}</span>
+      <CornerStroke
+        color={color}
+        style={{
+          left: off,
+          top: off,
+          width: size,
+          height: size,
+        }}
+      />
+      <CornerStroke
+        color={color}
+        style={{
+          right: off,
+          top: off,
+          width: size,
+          height: size,
+          transform: 'rotate(180deg) scaleY(-1)',
+          transformOrigin: 'center',
+        }}
+      />
+      <CornerStroke
+        color={color}
+        style={{
+          left: off,
+          bottom: off,
+          width: size,
+          height: size,
+          transform: 'scaleY(-1)',
+          transformOrigin: 'center',
+        }}
+      />
+      <CornerStroke
+        color={color}
+        style={{
+          right: off,
+          bottom: off,
+          width: size,
+          height: size,
+          transform: 'rotate(180deg)',
+          transformOrigin: 'center',
+        }}
+      />
     </>
   );
 }
 
-// ── Single question region card ───────────────────────────────────────────────
+// ── Selection region card ─────────────────────────────────────────────────────
 function QuestionRegion({
-  region,
-  index,
-  showRemove,
-  onRemove,
+  region, index, active, showRemove, onRemove, onDragStart, onResizeStart,
 }: {
   region: Region;
   index: number;
+  active: boolean;
   showRemove: boolean;
   onRemove: () => void;
+  onDragStart: (e: React.PointerEvent) => void;
+  onResizeStart: (e: React.PointerEvent, handle: ResizeHandle) => void;
 }) {
+  const HANDLE = 36;
+  const HANDLE_TOP_RIGHT = 28;
+  const dragWidth = Math.max(48, Math.min(region.width - 88, 140));
+  const dragHeight = Math.max(24, Math.min(region.height - 52, 72));
+  const dragTop = Math.max(24, Math.round((region.height - dragHeight) / 2) + 10);
+
   return (
     <div
-      className="absolute"
+      className="absolute touch-none select-none"
       style={{
         left:   region.left,
         top:    region.top,
@@ -81,91 +242,75 @@ function QuestionRegion({
       }}
     >
       {/* Grey fill */}
+      <div className="absolute inset-0 rounded-[20px]" style={{ background: 'rgba(217,217,217,0.45)' }} />
+      {/* Drag handle: intentionally smaller than the whole frame to avoid conflicts with close/resize controls */}
       <div
-        className="absolute inset-0 rounded-[20px]"
-        style={{ background: 'rgba(217,217,217,0.45)' }}
-      />
-      {/* White border */}
-      <div
-        className="absolute inset-0 rounded-[20px]"
-        style={{ border: '1.5px solid rgba(255,255,255,0.8)' }}
+        className="absolute rounded-[16px]"
+        style={{
+          left: '50%',
+          width: dragWidth,
+          height: dragHeight,
+          top: dragTop,
+          cursor: 'grab',
+          transform: 'translateX(-50%)',
+        }}
+        onPointerDown={onDragStart}
       />
       {/* Corner brackets */}
-      <CornerBrackets width={region.width} height={region.height} />
+      <CornerBrackets active={active} />
 
       {/* Q# label */}
       <div
-        className="absolute flex items-center justify-center rounded-full px-[10px]"
-        style={{
-          background: '#339bc9',
-          height: 20,
-          left: 8,
-          top: 8,
-        }}
+        className="absolute flex items-center justify-center rounded-full px-[10px] pointer-events-none"
+        style={{ background: '#339bc9', height: 20, left: 8, top: 8 }}
       >
-        <span className="font-['Rco',sans-serif] text-[12px] text-white leading-none">
-          Q{index + 1}
-        </span>
+        <span className="font-['Rco',sans-serif] text-[12px] text-white leading-none">Q{index + 1}</span>
       </div>
 
       {/* × remove button */}
       {showRemove && (
         <button
+          onPointerDown={e => e.stopPropagation()}
           onClick={onRemove}
           className="absolute flex items-center justify-center rounded-full"
-          style={{
-            background: 'rgba(13,14,18,0.4)',
-            width: 20,
-            height: 20,
-            right: 8,
-            top: 8,
-          }}
+          style={{ background: 'rgba(13,14,18,0.4)', width: 20, height: 20, right: 8, top: 8 }}
         >
           <span className="font-['Rco',sans-serif] text-[11px] text-white leading-none">{'\uE92A'}</span>
         </button>
       )}
+
+      {/* Invisible corner resize handles */}
+      <div className="absolute" style={{ left: -HANDLE/2, top: -HANDLE/2, width: HANDLE, height: HANDLE, cursor: 'nw-resize' }}
+        onPointerDown={e => { e.stopPropagation(); onResizeStart(e, 'nw'); }} />
+      <div
+        className="absolute"
+        style={{
+          right: -(HANDLE_TOP_RIGHT / 2) - 10,
+          top: -(HANDLE_TOP_RIGHT / 2) - 10,
+          width: HANDLE_TOP_RIGHT,
+          height: HANDLE_TOP_RIGHT,
+          cursor: 'ne-resize',
+        }}
+        onPointerDown={e => { e.stopPropagation(); onResizeStart(e, 'ne'); }} />
+      <div className="absolute" style={{ left: -HANDLE/2, bottom: -HANDLE/2, width: HANDLE, height: HANDLE, cursor: 'sw-resize' }}
+        onPointerDown={e => { e.stopPropagation(); onResizeStart(e, 'sw'); }} />
+      <div className="absolute" style={{ right: -HANDLE/2, bottom: -HANDLE/2, width: HANDLE, height: HANDLE, cursor: 'se-resize' }}
+        onPointerDown={e => { e.stopPropagation(); onResizeStart(e, 'se'); }} />
     </div>
   );
 }
 
-// ── Segmented control ─────────────────────────────────────────────────────────
-function SegmentedControl({
-  value,
-  onChange,
-}: {
-  value: 'single' | 'multi';
-  onChange: (v: 'single' | 'multi') => void;
-}) {
-  const options: { key: 'single' | 'multi'; label: string }[] = [
-    { key: 'single', label: 'Single Question'    },
-    { key: 'multi',  label: 'Multiple Questions' },
-  ];
+function ReviewToast({ message }: { message: string }) {
   return (
-    <div
-      className="flex items-center w-full h-[32px] rounded-full p-[2px] gap-[4px]"
-      style={{ background: 'rgba(102,183,213,0.2)' }}
-    >
-      {options.map(opt => {
-        const active = value === opt.key;
-        return (
-          <button
-            key={opt.key}
-            onClick={() => onChange(opt.key)}
-            className="flex flex-1 items-center justify-center h-full rounded-[20px] transition-all duration-150 px-[6px]"
-            style={{ background: active ? '#339bc9' : 'transparent' }}
-          >
-            <span
-              className="text-[13px] leading-none whitespace-nowrap overflow-hidden text-ellipsis font-['Hiragino_Sans',sans-serif]"
-              style={{
-                color:      active ? 'white' : '#0371a4',
-                fontWeight: active ? 600 : 500,
-              }}
-            >
-              {opt.label}
-            </span>
-          </button>
-        );
-      })}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+      <div
+        className="rounded-[8px] bg-[rgba(13,14,18,0.8)] px-[20px] py-[12px] text-center backdrop-blur-[25px]"
+        style={{ animation: 'toast-in-out 2.5s ease both', maxWidth: 280 }}
+      >
+        <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-white whitespace-pre-line">
+          {message}
+        </p>
+      </div>
     </div>
   );
 }
@@ -173,146 +318,186 @@ function SegmentedControl({
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function CameraReviewScreen() {
   const navigate = useNavigate();
-  const [mode,    setMode]    = useState<'single' | 'multi'>('multi');
-  const [regions, setRegions] = useState<Region[]>(MULTI_PRESETS);
+  const [regions, setRegions] = useState<Region[]>([INITIAL_REGION]);
+  const [activeRegionId, setActiveRegionId] = useState<number | null>(null);
+  const [toast, setToast] = useState<{ key: number; message: string } | null>(null);
 
-  function handleModeChange(m: 'single' | 'multi') {
-    setMode(m);
-    nextId = m === 'single' ? 2 : MULTI_PRESETS.length + 1;
-    setRegions(m === 'single' ? SINGLE_REGIONS : MULTI_PRESETS);
+  const isSingle = regions.length === 1;
+
+  const interactionRef = useRef<Interaction | null>(null);
+
+  useStatusBar({ light: true });
+
+  useEffect(() => {
+    function onMove(e: PointerEvent) {
+      const ia = interactionRef.current;
+      if (!ia) return;
+
+      const dx = e.clientX - ia.startClientX;
+      const dy = e.clientY - ia.startClientY;
+      const s  = ia.startRegion;
+
+      setRegions(prev => prev.map(r => {
+        if (r.id !== ia.id) return r;
+
+        if (ia.type === 'drag') {
+          return {
+            ...r,
+            left: clamp(s.left + dx, 0, CAMERA_W - s.width),
+            top:  clamp(s.top  + dy, 0, CAMERA_H - s.height),
+          };
+        }
+
+        let { left, top, width, height } = s;
+        const h = ia.handle!;
+
+        if (h === 'se') {
+          width  = clamp(s.width  + dx, MIN_SIZE, CAMERA_W - s.left);
+          height = clamp(s.height + dy, MIN_SIZE, CAMERA_H - s.top);
+        } else if (h === 'sw') {
+          width  = clamp(s.width  - dx, MIN_SIZE, s.left + s.width);
+          left   = s.left + s.width - width;
+          height = clamp(s.height + dy, MIN_SIZE, CAMERA_H - s.top);
+        } else if (h === 'ne') {
+          width  = clamp(s.width  + dx, MIN_SIZE, CAMERA_W - s.left);
+          height = clamp(s.height - dy, MIN_SIZE, s.top + s.height - 0);
+          top    = clamp(s.top + s.height - height, 0, CAMERA_H - MIN_SIZE);
+          height = s.top + s.height - top;
+        } else if (h === 'nw') {
+          width  = clamp(s.width  - dx, MIN_SIZE, s.left + s.width);
+          left   = s.left + s.width - width;
+          height = clamp(s.height - dy, MIN_SIZE, s.top + s.height - 0);
+          top    = clamp(s.top + s.height - height, 0, CAMERA_H - MIN_SIZE);
+          height = s.top + s.height - top;
+        }
+
+        return { ...r, left, top, width, height };
+      }));
+    }
+
+    function onUp() {
+      const ia = interactionRef.current;
+      if (ia) {
+        setRegions((prev) => prev.map((region) => {
+          if (region.id !== ia.id) return region;
+          return resolveRegionRelease(region, prev, ia.startRegion);
+        }));
+      }
+      interactionRef.current = null;
+      setActiveRegionId(null);
+    }
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup',   onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup',   onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+  }, []);
+
+  function startDrag(e: React.PointerEvent, id: number) {
+    e.preventDefault();
+    const region = regions.find(r => r.id === id)!;
+    setActiveRegionId(id);
+    interactionRef.current = {
+      type: 'drag', id,
+      startClientX: e.clientX, startClientY: e.clientY,
+      startRegion: { ...region },
+    };
+  }
+
+  function startResize(e: React.PointerEvent, id: number, handle: ResizeHandle) {
+    e.preventDefault();
+    const region = regions.find(r => r.id === id)!;
+    setActiveRegionId(id);
+    interactionRef.current = {
+      type: 'resize', id, handle,
+      startClientX: e.clientX, startClientY: e.clientY,
+      startRegion: { ...region },
+    };
+  }
+
+  function showToast(message: string) {
+    setToast({ key: Date.now(), message });
+    setTimeout(() => setToast(null), 2500);
   }
 
   function handleAddRegion() {
-    setRegions(prev => [...prev, nextRegion(prev)]);
+    const next = createNextRegion(regions);
+    if (!next) {
+      showToast('当前页面已满。\n无法添加更多选框');
+      return;
+    }
+    setRegions((prev) => [...prev, next]);
   }
 
   function handleRemove(id: number) {
     setRegions(prev => prev.filter(r => r.id !== id));
   }
 
-  const BOTTOM_H = 56 + 8 + 56 + IOS_SAFE_AREA_BOTTOM + 16; // segmented + gap + confirm + home
-
   return (
     <div className="relative h-full w-full overflow-hidden bg-white">
 
       {/* ── Dark camera area ───────────────────────────────────────────────── */}
-      <div
-        className="absolute inset-x-0 top-0 overflow-hidden"
-        style={{ height: CAMERA_H }}
-      >
-        {/* Solid dark bg (simulates camera) */}
-        <div
-          className="absolute inset-0"
-          style={{ background: 'rgba(13,14,18,0.85)' }}
-        />
+      <div className="absolute inset-x-0 top-0 overflow-hidden" style={{ height: CAMERA_H }}>
+        <div className="absolute inset-0" style={{ background: 'rgba(13,14,18,0.85)' }} />
 
-        {/* Subtract mask for visual atmosphere */}
-        <img
-          src={imgSubtract}
-          alt=""
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ objectFit: 'fill', opacity: 0.6 }}
-        />
-
-        {/* Question regions */}
         {regions.map((r, i) => (
           <QuestionRegion
             key={r.id}
             region={r}
             index={i}
+            active={activeRegionId === r.id}
             showRemove={regions.length > 1}
             onRemove={() => handleRemove(r.id)}
+            onDragStart={e => startDrag(e, r.id)}
+            onResizeStart={(e, handle) => startResize(e, r.id, handle)}
           />
         ))}
 
+
         {/* Hint text */}
-        <div
-          className="absolute inset-x-0 flex items-center justify-center px-[30px]"
-          style={{ top: 510 }}
-        >
-          <p
-            className="font-['Hiragino_Sans',sans-serif] text-[16px] text-white text-center leading-normal"
-            style={{ opacity: 0.7 }}
-          >
-            枠の大きさを調整してください。
+        <div className="absolute inset-x-0 flex items-center justify-center px-[30px]" style={{ top: 510 }}>
+          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] text-white text-center leading-normal" style={{ opacity: 0.7 }}>
+            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
           </p>
         </div>
       </div>
 
-      {/* ── Top bar (overlaid on camera area) ──────────────────────────────── */}
-      <div
-        className="absolute inset-x-0 z-10 flex items-center px-[10px]"
-        style={{ top: IOS_SAFE_AREA_TOP + 4, height: 56 }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="w-[40px] h-[40px] flex items-center justify-center rounded-full"
-        >
-          <span className="font-['Rco',sans-serif] text-[24px] text-white leading-none tracking-[0.48px]">
-            {'\uE902'}
-          </span>
+      {/* ── Top bar ────────────────────────────────────────────────────────── */}
+      <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center px-[10px]" style={{ top: IOS_SAFE_AREA_TOP + 4, height: 56 }}>
+        <button onClick={() => navigate(-1)} className="pointer-events-auto w-[40px] h-[40px] flex items-center justify-center rounded-full">
+          <span className="font-['Rco',sans-serif] text-[24px] text-white leading-none tracking-[0.48px]">{'\uE902'}</span>
         </button>
       </div>
 
       {/* ── Bottom white panel ─────────────────────────────────────────────── */}
       <div
-        className="absolute inset-x-0 bottom-0 bg-white flex flex-col items-center"
-        style={{ top: CAMERA_H }}
+        className="absolute inset-x-0 bottom-0 bg-white flex flex-col items-center justify-end px-[20px]"
+        style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10, gap: 10 }}
       >
-        <div
-          className="flex flex-col gap-[8px] items-center w-full px-[20px]"
-          style={{ paddingTop: 20 }}
+        <button
+          onClick={handleAddRegion}
+          className="flex items-center justify-center gap-[6px] w-full rounded-[12px]"
+          style={{ height: 52 }}
         >
-          {/* Segmented control */}
-          <SegmentedControl value={mode} onChange={handleModeChange} />
+          <span className="font-['Rco',sans-serif] text-[18px] leading-none tracking-[0.36px]" style={{ color: '#0371a4' }}>{'\uE957'}</span>
+          <span className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-none" style={{ color: '#0371a4' }}>もう1問追加</span>
+        </button>
 
-          {/* Add another question (multi mode only) */}
-          {mode === 'multi' && (
-            <button
-              onClick={handleAddRegion}
-              className="flex items-center justify-center gap-[4px] bg-white rounded-[12px] w-[335px] h-[56px]"
-              style={{ border: '1px solid rgba(51,155,201,0.2)' }}
-            >
-              <span
-                className="font-['Rco',sans-serif] text-[18px] leading-none tracking-[0.36px]"
-                style={{ color: '#0371a4' }}
-              >
-                {'\uE957'}
-              </span>
-              <span
-                className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-none"
-                style={{ color: '#0371a4' }}
-              >
-                もう1問追加
-              </span>
-            </button>
-          )}
-        </div>
-
-        {/* Confirm button — pinned to bottom */}
-        <div
-          className="absolute inset-x-0 flex flex-col items-center gap-[8px]"
-          style={{ bottom: IOS_SAFE_AREA_BOTTOM }}
+        <button
+          onClick={() => navigate('/question-report')}
+          className="flex items-center justify-center w-full rounded-[12px] font-['Hiragino_Sans',sans-serif] font-bold text-[16px] text-white border-b-4"
+          style={{ height: 56, background: '#339bc9', borderColor: '#0371a4' }}
         >
-          <button
-            onClick={() => navigate('/question-report')}
-            className="flex items-center justify-center rounded-[12px] font-['Hiragino_Sans',sans-serif] font-bold text-[16px] text-white border-b-4"
-            style={{
-              width: 335,
-              height: 56,
-              background: '#339bc9',
-              borderColor: '#0371a4',
-            }}
-          >
-            確認
-          </button>
-          {/* Home bar */}
-          <div
-            className="rounded-full"
-            style={{ width: 134, height: 5, background: '#0d0e12', opacity: 0.2 }}
-          />
-        </div>
+          確認
+        </button>
+
       </div>
+
+      {toast && <ReviewToast key={toast.key} message={toast.message} />}
 
     </div>
   );

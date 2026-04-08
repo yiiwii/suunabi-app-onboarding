@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router';
 import { IOS_SAFE_AREA_TOP } from './preview/device';
 import { BottomNavBar, BOTTOM_NAV_HEIGHT } from './BottomNavBar';
-import crownIcon from '../../assets/settings-crown.png';
+import crownIcon from '../../assets/settings-crown.svg';
 
 const HEADER_HEIGHT = IOS_SAFE_AREA_TOP + 80;
 

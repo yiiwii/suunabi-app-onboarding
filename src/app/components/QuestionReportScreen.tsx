@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
 
-const imgImage222 = 'https://www.figma.com/api/mcp/asset/7abe76ba-aed8-423d-a055-6d2b3321c5a9';
-const imgImage223 = 'https://www.figma.com/api/mcp/asset/34dc767b-0cf1-473d-b39c-f436b9d4f34b';
-const imgImage224 = 'https://www.figma.com/api/mcp/asset/24cb14b5-b54e-4aad-9ac3-ca193243f9cb';
-const imgPose81 = 'https://www.figma.com/api/mcp/asset/c03b590d-5971-47ad-babd-ffad965f72bd';
-const imgGroup3276 = 'https://www.figma.com/api/mcp/asset/7aac15ad-4c38-4b73-bda5-485f4fc40bbc';
-const imgPose72 = 'https://www.figma.com/api/mcp/asset/4557835a-f8f8-4ea9-a764-f8393b7f7cbd';
-const imgGroup3275 = 'https://www.figma.com/api/mcp/asset/87fd2f78-8207-430a-968f-d40a82e0f5b2';
-const imgIconoirSparkSolid = 'https://www.figma.com/api/mcp/asset/2255ade4-ccad-4531-a6e4-efcf8176776e';
+import imgImage222          from '../../assets/report-image-222.png';
+import imgImage223          from '../../assets/report-image-223.png';
+import imgImage224          from '../../assets/report-image-224.png';
+import imgPose81            from '../../assets/report-pose-81.png';
+import imgGroup3276         from '../../assets/report-group-3276.svg';
+import imgPose72            from '../../assets/report-pose-72.png';
+import imgGroup3275         from '../../assets/report-group-3275.svg';
+import imgIconoirSparkSolid from '../../assets/report-spark-solid.svg';
 
 // ── Step card ─────────────────────────────────────────────────────────────────
 function StepCard({

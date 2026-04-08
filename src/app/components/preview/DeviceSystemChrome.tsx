@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 import {
   IOS_HOME_INDICATOR_BOTTOM,
   IOS_HOME_INDICATOR_HEIGHT,
@@ -6,21 +7,25 @@ import {
   IOS_STATUS_BAR_HEIGHT,
   IOS_STATUS_BAR_TRAILING,
 } from './device';
+import { StatusBarContext } from './StatusBarContext';
 
 export function DeviceSystemChrome() {
+  const { config } = useContext(StatusBarContext);
+  const color = config.light ? 'white' : 'var(--token-color-black-100)';
+
   return (
     <>
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[110] text-[var(--token-color-black-100)]" style={{ height: IOS_STATUS_BAR_HEIGHT }}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[110]" style={{ height: IOS_STATUS_BAR_HEIGHT, color }}>
         <p
-          className="absolute font-[system-ui,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',sans-serif] text-[15px] font-semibold leading-none tracking-[-0.2px] tabular-nums text-[var(--token-color-black-100)]"
-          style={{ left: IOS_STATUS_BAR_LEADING, top: 17 }}
+          className="absolute font-[system-ui,-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Segoe_UI',sans-serif] text-[15px] font-semibold leading-none tracking-[-0.2px] tabular-nums"
+          style={{ left: IOS_STATUS_BAR_LEADING, top: 17, color }}
         >
           9:41
         </p>
 
         <div
-          className="absolute flex items-center gap-[7px] text-[var(--token-color-black-100)]"
-          style={{ right: IOS_STATUS_BAR_TRAILING, top: 17 }}
+          className="absolute flex items-center gap-[7px]"
+          style={{ right: IOS_STATUS_BAR_TRAILING, top: 17, color }}
         >
           <svg aria-hidden="true" width="19" height="12" viewBox="0 0 19 12" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="1" y="7.5" width="3" height="3.5" rx="1.1" fill="currentColor" />
@@ -49,8 +54,12 @@ export function DeviceSystemChrome() {
         style={{ bottom: IOS_HOME_INDICATOR_BOTTOM }}
       >
         <div
-          className="rounded-full bg-[var(--token-color-black-100)] opacity-100 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]"
-          style={{ width: IOS_HOME_INDICATOR_WIDTH, height: IOS_HOME_INDICATOR_HEIGHT }}
+          className="rounded-full"
+          style={{
+            width: IOS_HOME_INDICATOR_WIDTH,
+            height: IOS_HOME_INDICATOR_HEIGHT,
+            background: 'rgba(0,0,0,0.2)',
+          }}
         />
       </div>
     </>

@@ -63,10 +63,7 @@ export function MobilePreview({
           </div>
         </div>
 
-        {/* Device buttons */}
-        <div className="absolute -right-1 top-32 h-12 w-1 rounded-l bg-black" />
-        <div className="absolute -right-1 top-48 h-20 w-1 rounded-l bg-black" />
-        <div className="absolute -left-1 top-40 h-14 w-1 rounded-r bg-black" />
+
       </div>
       </div>
     </div>
