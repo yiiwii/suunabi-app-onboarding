@@ -634,12 +634,6 @@ export default function CameraReviewScreen() {
         ))}
 
 
-        {/* Hint text */}
-        <div className="absolute inset-x-0 flex items-center justify-center px-[30px]" style={{ top: 510 }}>
-          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] text-white text-center leading-normal" style={{ opacity: 0.7 }}>
-            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
-          </p>
-        </div>
       </div>
 
       {/* ── Top bar ────────────────────────────────────────────────────────── */}
@@ -654,6 +648,12 @@ export default function CameraReviewScreen() {
         className="absolute inset-x-0 bottom-0 bg-white flex flex-col items-center justify-end px-[20px]"
         style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10, gap: 10 }}
       >
+        <div className="w-full flex items-center justify-center px-[30px] pt-[14px] pb-[2px]">
+          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] text-center leading-normal" style={{ color: 'rgba(13,14,18,0.6)' }}>
+            {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
+          </p>
+        </div>
+
         <button
           onClick={handleAddRegion}
           className="flex items-center justify-center gap-[6px] w-full rounded-[12px]"
