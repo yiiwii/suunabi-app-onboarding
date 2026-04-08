@@ -386,7 +386,7 @@ function QuestionRegion({
         >
           <span
             className="absolute right-[2px] top-[2px] flex items-center justify-center rounded-full font-['Rco',sans-serif] text-[11px] text-white leading-none"
-            style={{ background: 'rgba(13,14,18,0.4)', width: 20, height: 20 }}
+            style={{ background: 'rgba(13,14,18,0.6)', width: 20, height: 20 }}
           >
             {'\uE92A'}
           </span>
@@ -645,16 +645,17 @@ export default function CameraReviewScreen() {
 
       {/* ── Bottom white panel ─────────────────────────────────────────────── */}
       <div
-        className="absolute inset-x-0 bottom-0 bg-white flex flex-col items-center justify-end px-[20px]"
-        style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10, gap: 10 }}
+        className="absolute inset-x-0 bottom-0 bg-white px-[20px]"
+        style={{ top: CAMERA_H, paddingBottom: IOS_SAFE_AREA_BOTTOM + 10 }}
       >
-        <div className="w-full flex items-center justify-center px-[30px] pt-[14px] pb-[2px]">
-          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] text-center leading-normal" style={{ color: 'rgba(13,14,18,0.6)' }}>
+        <div className="absolute left-[20px] right-[20px] top-[10px]">
+          <p className="truncate font-['Hiragino_Sans',sans-serif] text-[14px] text-center leading-none" style={{ color: 'rgba(13,14,18,0.6)' }}>
             {isSingle ? '一個の枠内に1問を配置してください。' : '枠の大きさを調整してください。'}
           </p>
         </div>
 
-        <button
+        <div className="flex h-full flex-col items-center justify-end gap-[10px] pt-[34px]">
+          <button
           onClick={handleAddRegion}
           className="flex items-center justify-center gap-[6px] w-full rounded-[12px]"
           style={{ height: 52 }}
@@ -670,7 +671,7 @@ export default function CameraReviewScreen() {
         >
           確認
         </button>
-
+        </div>
       </div>
 
       {toast && <ReviewToast key={toast.key} message={toast.message} />}
