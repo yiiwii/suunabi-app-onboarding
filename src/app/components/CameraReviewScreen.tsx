@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
 import { useStatusBar } from './preview/StatusBarContext';
+import imgUsabilityTestSheet from '../../assets/usability-test-question-sheet.jpeg';
 
 const CAMERA_H  = 559;
 const CAMERA_W  = 375;
@@ -128,6 +129,43 @@ function createNextRegion(regions: Region[]): Region | null {
     ? findNearestValidPlacement(candidate, regions)
     : candidate;
   return resolved ? { ...resolved, id: candidate.id } : null;
+}
+
+function roundedRectPath(x: number, y: number, width: number, height: number, radius: number) {
+  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  return [
+    `M ${x + r} ${y}`,
+    `H ${x + width - r}`,
+    `A ${r} ${r} 0 0 1 ${x + width} ${y + r}`,
+    `V ${y + height - r}`,
+    `A ${r} ${r} 0 0 1 ${x + width - r} ${y + height}`,
+    `H ${x + r}`,
+    `A ${r} ${r} 0 0 1 ${x} ${y + height - r}`,
+    `V ${y + r}`,
+    `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
+    'Z',
+  ].join(' ');
+}
+
+function buildCutoutPath(regions: Region[]) {
+  const paths = [`M 0 0 H ${CAMERA_W} V ${CAMERA_H} H 0 Z`];
+  for (const region of regions) {
+    paths.push(roundedRectPath(region.left, region.top, region.width, region.height, 20));
+  }
+  return paths.join(' ');
+}
+
+function CutoutOverlay({ regions }: { regions: Region[] }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="absolute inset-0 h-full w-full pointer-events-none"
+      viewBox={`0 0 ${CAMERA_W} ${CAMERA_H}`}
+      preserveAspectRatio="none"
+    >
+      <path d={buildCutoutPath(regions)} fill="rgba(13,14,18,0.6)" fillRule="evenodd" />
+    </svg>
+  );
 }
 
 
@@ -261,8 +299,6 @@ function QuestionRegion({
         transformOrigin: 'center',
       }}
     >
-      {/* Grey fill */}
-      <div className="absolute inset-0 rounded-[20px]" style={{ background: 'rgba(217,217,217,0.45)' }} />
       {/* Drag handle: intentionally smaller than the whole frame to avoid conflicts with close/resize controls */}
       <div
         className="absolute rounded-[16px]"
@@ -562,7 +598,13 @@ export default function CameraReviewScreen() {
 
       {/* ── Dark camera area ───────────────────────────────────────────────── */}
       <div className="absolute inset-x-0 top-0 overflow-hidden" style={{ height: CAMERA_H }}>
-        <div className="absolute inset-0" style={{ background: 'rgba(13,14,18,0.85)' }} />
+        <img
+          src={imgUsabilityTestSheet}
+          alt="Usability test question sheet"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: 'center center' }}
+        />
+        <CutoutOverlay regions={regions} />
 
         {regions.map((r, i) => (
           <QuestionRegion
