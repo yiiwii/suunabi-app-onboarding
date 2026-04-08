@@ -5,7 +5,7 @@ import { useStatusBar } from './preview/StatusBarContext';
 
 const CAMERA_H  = 559;
 const CAMERA_W  = 375;
-const MIN_SIZE  = 60;
+const MIN_SIZE  = 72;
 const BRAND_BLUE = '#339bc9';
 
 interface Region {
@@ -215,21 +215,33 @@ function CornerBrackets({ active }: { active: boolean }) {
 
 // ── Selection region card ─────────────────────────────────────────────────────
 function QuestionRegion({
-  region, index, active, showRemove, onRemove, onDragStart, onResizeStart,
+  region, index, active, snapping, showRemove, showHitAreas, onRemove, onDragStart, onResizeStart,
 }: {
   region: Region;
   index: number;
   active: boolean;
+  snapping: boolean;
   showRemove: boolean;
+  showHitAreas: boolean;
   onRemove: () => void;
   onDragStart: (e: React.PointerEvent) => void;
   onResizeStart: (e: React.PointerEvent, handle: ResizeHandle) => void;
 }) {
   const HANDLE = 36;
   const HANDLE_TOP_RIGHT = 28;
-  const dragWidth = Math.max(48, Math.min(region.width - 88, 140));
-  const dragHeight = Math.max(24, Math.min(region.height - 52, 72));
-  const dragTop = Math.max(24, Math.round((region.height - dragHeight) / 2) + 10);
+  const CLOSE_SIZE = 32;
+  const isWideFrame = region.width / region.height >= 1.8;
+  const dragSideInset = Math.max(16, Math.min(24, Math.round(region.width * 0.08)));
+  const dragTopInset = Math.max(40, Math.min(52, Math.round(region.height * 0.28)));
+  const dragBottomInset = Math.max(16, Math.min(22, Math.round(region.height * 0.12)));
+  const dragWidth = Math.max(56, region.width - dragSideInset * 2);
+  const dragHeight = Math.max(28, region.height - dragTopInset - dragBottomInset);
+  const dragTop = dragTopInset;
+  const topBandLeft = 74;
+  const topBandRight = 62;
+  const topBandTop = 12;
+  const topBandHeight = 26;
+  const topBandWidth = Math.max(48, region.width - topBandLeft - topBandRight);
 
   return (
     <div
@@ -239,6 +251,14 @@ function QuestionRegion({
         top:    region.top,
         width:  region.width,
         height: region.height,
+        opacity: 1,
+        transform: 'scale(1)',
+        transition: active
+          ? 'none'
+          : [
+              snapping ? 'left 120ms ease-out, top 120ms ease-out' : '',
+            ].filter(Boolean).join(', ') || 'none',
+        transformOrigin: 'center',
       }}
     >
       {/* Grey fill */}
@@ -256,15 +276,56 @@ function QuestionRegion({
         }}
         onPointerDown={onDragStart}
       />
+      {isWideFrame && (
+        <div
+          className="absolute rounded-[14px]"
+          style={{
+            left: topBandLeft,
+            width: topBandWidth,
+            top: topBandTop,
+            height: topBandHeight,
+            cursor: 'grab',
+          }}
+          onPointerDown={onDragStart}
+        />
+      )}
+      {showHitAreas && (
+        <div
+          className="absolute rounded-[16px] border border-[rgba(52,199,89,0.9)] bg-[rgba(52,199,89,0.22)] pointer-events-none"
+          style={{
+            left: '50%',
+            width: dragWidth,
+            height: dragHeight,
+            top: dragTop,
+            transform: 'translateX(-50%)',
+          }}
+        />
+      )}
+      {showHitAreas && isWideFrame && (
+        <div
+          className="absolute rounded-[14px] border border-[rgba(52,199,89,0.9)] bg-[rgba(52,199,89,0.22)] pointer-events-none"
+          style={{
+            left: topBandLeft,
+            width: topBandWidth,
+            top: topBandTop,
+            height: topBandHeight,
+          }}
+        />
+      )}
       {/* Corner brackets */}
       <CornerBrackets active={active} />
 
       {/* Q# label */}
       <div
         className="absolute flex items-center justify-center rounded-full px-[10px] pointer-events-none"
-        style={{ background: '#339bc9', height: 20, left: 8, top: 8 }}
+        style={{ background: active ? '#339bc9' : '#ffffff', height: 20, left: 8, top: 8 }}
       >
-        <span className="font-['Rco',sans-serif] text-[12px] text-white leading-none">Q{index + 1}</span>
+        <span
+          className="font-['Rco',sans-serif] text-[12px] leading-none"
+          style={{ color: active ? '#ffffff' : '#339bc9' }}
+        >
+          Q{index + 1}
+        </span>
       </div>
 
       {/* × remove button */}
@@ -272,11 +333,22 @@ function QuestionRegion({
         <button
           onPointerDown={e => e.stopPropagation()}
           onClick={onRemove}
-          className="absolute flex items-center justify-center rounded-full"
-          style={{ background: 'rgba(13,14,18,0.4)', width: 20, height: 20, right: 8, top: 8 }}
+          className="absolute"
+          style={{ width: CLOSE_SIZE, height: CLOSE_SIZE, right: 8, top: 8 }}
         >
-          <span className="font-['Rco',sans-serif] text-[11px] text-white leading-none">{'\uE92A'}</span>
+          <span
+            className="absolute right-[2px] top-[2px] flex items-center justify-center rounded-full font-['Rco',sans-serif] text-[11px] text-white leading-none"
+            style={{ background: 'rgba(13,14,18,0.4)', width: 20, height: 20 }}
+          >
+            {'\uE92A'}
+          </span>
         </button>
+      )}
+      {showRemove && showHitAreas && (
+        <div
+          className="absolute rounded-full border border-[rgba(255,59,48,0.95)] bg-[rgba(255,59,48,0.24)] pointer-events-none"
+          style={{ width: CLOSE_SIZE, height: CLOSE_SIZE, right: 8, top: 8 }}
+        />
       )}
 
       {/* Invisible corner resize handles */}
@@ -296,13 +368,33 @@ function QuestionRegion({
         onPointerDown={e => { e.stopPropagation(); onResizeStart(e, 'sw'); }} />
       <div className="absolute" style={{ right: -HANDLE/2, bottom: -HANDLE/2, width: HANDLE, height: HANDLE, cursor: 'se-resize' }}
         onPointerDown={e => { e.stopPropagation(); onResizeStart(e, 'se'); }} />
+      {showHitAreas && (
+        <>
+          <div
+            className="absolute border border-[rgba(10,132,255,0.95)] bg-[rgba(10,132,255,0.24)] pointer-events-none"
+            style={{ left: -HANDLE/2, top: -HANDLE/2, width: HANDLE, height: HANDLE }}
+          />
+          <div
+            className="absolute border border-[rgba(10,132,255,0.95)] bg-[rgba(10,132,255,0.24)] pointer-events-none"
+            style={{ right: -(HANDLE_TOP_RIGHT / 2) - 10, top: -(HANDLE_TOP_RIGHT / 2) - 10, width: HANDLE_TOP_RIGHT, height: HANDLE_TOP_RIGHT }}
+          />
+          <div
+            className="absolute border border-[rgba(10,132,255,0.95)] bg-[rgba(10,132,255,0.24)] pointer-events-none"
+            style={{ left: -HANDLE/2, bottom: -HANDLE/2, width: HANDLE, height: HANDLE }}
+          />
+          <div
+            className="absolute border border-[rgba(10,132,255,0.95)] bg-[rgba(10,132,255,0.24)] pointer-events-none"
+            style={{ right: -HANDLE/2, bottom: -HANDLE/2, width: HANDLE, height: HANDLE }}
+          />
+        </>
+      )}
     </div>
   );
 }
 
 function ReviewToast({ message }: { message: string }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+    <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none">
       <div
         className="rounded-[8px] bg-[rgba(13,14,18,0.8)] px-[20px] py-[12px] text-center backdrop-blur-[25px]"
         style={{ animation: 'toast-in-out 2.5s ease both', maxWidth: 280 }}
@@ -320,13 +412,20 @@ export default function CameraReviewScreen() {
   const navigate = useNavigate();
   const [regions, setRegions] = useState<Region[]>([INITIAL_REGION]);
   const [activeRegionId, setActiveRegionId] = useState<number | null>(null);
+  const [snappingRegionIds, setSnappingRegionIds] = useState<Set<number>>(() => new Set());
   const [toast, setToast] = useState<{ key: number; message: string } | null>(null);
 
   const isSingle = regions.length === 1;
 
   const interactionRef = useRef<Interaction | null>(null);
+  const regionsRef = useRef<Region[]>([INITIAL_REGION]);
+  const showHitAreas = new URLSearchParams(window.location.search).has('hitareas');
 
   useStatusBar({ light: true });
+
+  useEffect(() => {
+    regionsRef.current = regions;
+  }, [regions]);
 
   useEffect(() => {
     function onMove(e: PointerEvent) {
@@ -378,10 +477,31 @@ export default function CameraReviewScreen() {
     function onUp() {
       const ia = interactionRef.current;
       if (ia) {
-        setRegions((prev) => prev.map((region) => {
+        const currentRegions = regionsRef.current;
+        const nextRegions = currentRegions.map((region) => {
           if (region.id !== ia.id) return region;
-          return resolveRegionRelease(region, prev, ia.startRegion);
-        }));
+          return resolveRegionRelease(region, currentRegions, ia.startRegion);
+        });
+        setRegions(nextRegions);
+
+        const currentRegion = currentRegions.find((region) => region.id === ia.id);
+        const resolvedRegion = nextRegions.find((region) => region.id === ia.id);
+        const wasSnapped = Boolean(
+          currentRegion &&
+          resolvedRegion &&
+          (currentRegion.left !== resolvedRegion.left || currentRegion.top !== resolvedRegion.top)
+        );
+
+        if (wasSnapped) {
+          setSnappingRegionIds((prev) => new Set(prev).add(ia.id));
+          setTimeout(() => {
+            setSnappingRegionIds((prev) => {
+              const nextIds = new Set(prev);
+              nextIds.delete(ia.id);
+              return nextIds;
+            });
+          }, 120);
+        }
       }
       interactionRef.current = null;
       setActiveRegionId(null);
@@ -450,7 +570,9 @@ export default function CameraReviewScreen() {
             region={r}
             index={i}
             active={activeRegionId === r.id}
+            snapping={snappingRegionIds.has(r.id)}
             showRemove={regions.length > 1}
+            showHitAreas={showHitAreas}
             onRemove={() => handleRemove(r.id)}
             onDragStart={e => startDrag(e, r.id)}
             onResizeStart={(e, handle) => startResize(e, r.id, handle)}

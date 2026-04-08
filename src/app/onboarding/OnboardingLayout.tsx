@@ -1,5 +1,6 @@
-import { Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import { DebugPanel } from '../components/debug/DebugPanel';
+import { Switch } from '../components/ui/switch';
 import {
   IOS_DEVICE_HEIGHT,
   IOS_DEVICE_WIDTH,
@@ -27,6 +28,10 @@ interface OnboardingLayoutProps {
  */
 export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WIDTH }: OnboardingLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const isCameraReview = location.pathname === '/camera-review';
+  const searchParams = new URLSearchParams(location.search);
+  const showHitAreas = searchParams.has('hitareas');
 
   if (!showDebug) {
     return (
@@ -42,6 +47,27 @@ export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WI
         <div className="grid items-start gap-8 xl:grid-cols-[minmax(420px,1fr)_380px]">
           <div className="flex min-h-[calc(100vh-48px)] items-center justify-center rounded-[32px] border border-white/70 bg-[rgba(255,255,255,0.45)] p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
             <div className="relative">
+              {isCameraReview && (
+                <div className="absolute right-0 top-[-52px] flex items-center gap-3 rounded-full border border-white/80 bg-white/92 px-4 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur">
+                  <span className="text-[12px] font-medium text-slate-600">Hit Areas</span>
+                  <Switch
+                    checked={showHitAreas}
+                    onCheckedChange={(checked) => {
+                      const nextSearch = new URLSearchParams(location.search);
+                      if (checked) {
+                        nextSearch.set('hitareas', '1');
+                      } else {
+                        nextSearch.delete('hitareas');
+                      }
+                      navigate({
+                        pathname: location.pathname,
+                        search: nextSearch.toString() ? `?${nextSearch.toString()}` : '',
+                      });
+                    }}
+                    aria-label="Toggle hit area debug overlay"
+                  />
+                </div>
+              )}
               <div
                 className="relative bg-black p-3 shadow-2xl"
                 style={{ width: deviceWidth + 24, borderRadius: IOS_FRAME_RADIUS }}
