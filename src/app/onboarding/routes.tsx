@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import Splash from "../../imports/启动页";
 import Welcome from "../../imports/Welcome";
 import Intro1WithNavigation from "../components/Intro1WithNavigation";
@@ -33,7 +33,7 @@ import { OnboardingLayout } from "./OnboardingLayout";
  * and debug panel, with child routes rendering in the <Outlet />.
  */
 export function createOnboardingRouter(showDebug = true, deviceWidth = 375) {
-  return createBrowserRouter([
+  return createHashRouter([
     {
       path: "/",
       element: <OnboardingLayout showDebug={showDebug} deviceWidth={deviceWidth} />,
@@ -138,7 +138,5 @@ export function createOnboardingRouter(showDebug = true, deviceWidth = 375) {
         },
       ],
     },
-  ], {
-    basename: import.meta.env.BASE_URL,
-  });
+  ]);
 }
