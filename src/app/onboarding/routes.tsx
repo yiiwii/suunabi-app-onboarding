@@ -138,5 +138,7 @@ export function createOnboardingRouter(showDebug = true, deviceWidth = 375) {
         },
       ],
     },
-  ]);
+  ], {
+    basename: import.meta.env.BASE_URL,
+  });
 }
