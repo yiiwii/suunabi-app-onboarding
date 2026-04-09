@@ -32,6 +32,7 @@ function createPlaceholderAsset(source: string) {
 }
 
 export default defineConfig({
+  base: '/suunabi-app-onboarding/',
   plugins: [
     {
       name: 'figma-asset-resolver',
