@@ -438,10 +438,10 @@ function QuestionThreadView({ thread, onLongPress, onNavigate }: { thread: Quest
                     animationDelay: `${i * 60}ms`,
                   }}
                 >
-                  {/* Sub-card: white, thicker left border, narrower */}
+                  {/* Sub-card: white, uniform 1px border, narrower */}
                   <button
                     onClick={() => onNavigate()}
-                    className="text-left bg-white border border-[rgba(13,14,18,0.08)] border-l-[3px] rounded-[8px] p-[10px] flex flex-col gap-[10px] w-[315px] shadow-[0px_2px_4px_0px_rgba(0,0,0,0.05)]">
+                    className="text-left bg-white border border-[rgba(13,14,18,0.08)] rounded-[8px] p-[10px] flex flex-col gap-[10px] w-[315px] shadow-[0px_2px_4px_0px_rgba(0,0,0,0.05)]">
                     {/* Badge row — right-aligned, no title on sub-cards */}
                     <div className="flex items-center justify-end w-full">
                       {badge}
