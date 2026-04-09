@@ -695,18 +695,11 @@ export default function CameraReviewScreen() {
         if (r.id !== ia.id) return r;
 
         if (ia.type === 'drag') {
-          return resolveLiveDrag(
-            {
-              ...r,
-              left: s.left + dx,
-              top: s.top + dy,
-            },
-            s,
-            prev,
-            ia.id,
-            dx,
-            dy,
-          );
+          return {
+            ...r,
+            left: clamp(s.left + dx, 0, CAMERA_W - s.width),
+            top: clamp(s.top + dy, 0, CAMERA_H - s.height),
+          };
         }
 
         let { left, top, width, height } = s;
@@ -732,13 +725,7 @@ export default function CameraReviewScreen() {
           height = s.top + s.height - top;
         }
 
-        return resolveLiveResize(
-          { ...r, left, top, width, height },
-          s,
-          prev,
-          ia.id,
-          h,
-        );
+        return { ...r, left, top, width, height };
       }));
     }
 
