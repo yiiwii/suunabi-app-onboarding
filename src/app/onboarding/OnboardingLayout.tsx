@@ -1,4 +1,5 @@
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useOutlet } from 'react-router';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DebugPanel } from '../components/debug/DebugPanel';
 import { Switch } from '../components/ui/switch';
 import {
@@ -19,6 +20,60 @@ interface OnboardingLayoutProps {
   deviceWidth?: number;
 }
 
+type LayerState = {
+  key: string;
+  element: ReactNode;
+};
+
+function PageTransitionOutlet() {
+  const outlet = useOutlet();
+  const location = useLocation();
+  const [activeLayer, setActiveLayer] = useState<LayerState>({
+    key: location.key,
+    element: outlet,
+  });
+  const [previousLayer, setPreviousLayer] = useState<LayerState | null>(null);
+  const activeLayerRef = useRef(activeLayer);
+
+  useEffect(() => {
+    activeLayerRef.current = activeLayer;
+  }, [activeLayer]);
+
+  useEffect(() => {
+    const current = activeLayerRef.current;
+    if (location.key === current.key) return;
+
+    setPreviousLayer(current);
+    setActiveLayer({ key: location.key, element: outlet });
+
+    const timeout = window.setTimeout(() => {
+      setPreviousLayer(null);
+    }, 280);
+
+    return () => window.clearTimeout(timeout);
+  }, [location.key, outlet]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      {previousLayer && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ ...designTokenVars, animation: 'page-dissolve-out 280ms ease-out both' }}
+        >
+          {previousLayer.element}
+        </div>
+      )}
+      <div
+        key={activeLayer.key}
+        className="absolute inset-0"
+        style={{ ...designTokenVars, animation: 'page-dissolve-in 280ms ease-out both' }}
+      >
+        {activeLayer.element}
+      </div>
+    </div>
+  );
+}
+
 /**
  * OnboardingLayout - Layout wrapper for onboarding routes
  * 
@@ -36,7 +91,7 @@ export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WI
   if (!showDebug) {
     return (
       <div className="min-h-screen bg-white" style={designTokenVars}>
-        <Outlet />
+        <PageTransitionOutlet />
       </div>
     );
   }
@@ -86,13 +141,7 @@ export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WI
                   />
                   <StatusBarProvider>
                     <DeviceSystemChrome />
-                    <div
-                      key={location.key}
-                      className="h-full w-full overflow-hidden"
-                      style={{ ...designTokenVars, animation: 'page-dissolve-in 280ms ease-out both' }}
-                    >
-                      <Outlet />
-                    </div>
+                    <PageTransitionOutlet />
                   </StatusBarProvider>
                 </div>
               </div>
