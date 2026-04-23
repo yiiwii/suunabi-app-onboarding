@@ -1,8 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import Lottie from 'lottie-react';
 import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
 import { BottomNavBar, BOTTOM_NAV_HEIGHT } from './BottomNavBar';
 import threadArrow from '../../assets/thread-arrow.png';
+import emptyHistoryAnimation from '../../assets/question-book-empty-history.json';
+import emptySavedAnimation from '../../assets/question-book-empty-saved.json';
+import emptyFilteredImage from '../../assets/question-book-empty-filtered-node.png';
 
 import imgPartyPopper from '../../assets/qbook-party-popper.svg';
 
@@ -10,6 +14,8 @@ import imgPartyPopper from '../../assets/qbook-party-popper.svg';
 
 type CardStatus = 'cleared' | 'uncleared' | 'inProgress' | 'correct' | 'incorrect';
 type FilterType = 'all' | 'uncleared' | 'cleared';
+type QuestionBookEmptyKind = 'full' | 'saved' | 'filtered';
+type QuestionBookViewMode = 'content' | 'all' | null;
 
 interface ThreadCard {
   id: string;
@@ -204,6 +210,62 @@ function Toast({ message }: { message: string }) {
       <span className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-white">
         {message}
       </span>
+    </div>
+  );
+}
+
+function EmptyBookIllustration() {
+  return null;
+}
+
+function QuestionBookEmptyState({ kind }: { kind: QuestionBookEmptyKind }) {
+  const copy =
+    kind === 'full'
+      ? {
+          title: '一緒にチャレンジしよう！',
+          body: '間違えた問題や苦手な問題から始めてみよう。',
+        }
+      : kind === 'saved'
+        ? {
+            title: '長押しで問題を保存',
+            body: 'お気に入りに追加した問題は、ここに表示されます',
+          }
+        : {
+          title: '該当する質問はありません',
+          body: '',
+        }
+
+  return (
+    <div className="flex min-h-full flex-col items-center justify-center px-[24px] py-[56px] text-center">
+      {kind === 'filtered' ? (
+        <div className="h-[64px] w-[64px]">
+          <img src={emptyFilteredImage} alt="" className="h-full w-full object-contain" />
+        </div>
+      ) : (
+        <div className="h-[160px] w-[260px]">
+          <Lottie
+            animationData={kind === 'full' ? emptyHistoryAnimation : emptySavedAnimation}
+            autoplay
+            loop={false}
+          />
+        </div>
+      )}
+      <div className={`flex flex-col items-center ${kind === 'filtered' ? 'mt-[12px]' : 'mt-[16px]'} ${kind === 'filtered' ? 'gap-0' : 'gap-[8px]'}`}>
+        <h2
+          className={`font-['Hiragino_Sans',sans-serif] ${
+            kind === 'filtered'
+              ? 'font-normal text-[14px] leading-[1.5] text-[rgba(13,14,18,0.28)]'
+              : 'font-bold text-[18px] leading-[1.35] text-[rgba(13,14,18,0.88)]'
+          }`}
+        >
+          {copy.title}
+        </h2>
+        {copy.body && kind !== 'filtered' && (
+          <p className="max-w-[250px] font-['Hiragino_Sans',sans-serif] text-[14px] leading-[1.55] text-[rgba(13,14,18,0.48)]">
+            {copy.body}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -461,35 +523,84 @@ function QuestionThreadView({ thread, onLongPress, onNavigate }: { thread: Quest
   );
 }
 
-// ─── Filter pill ──────────────────────────────────────────────────────────────
+// ─── Sliding segmented tabs ──────────────────────────────────────────────────
 
-function FilterPill({
-  label,
-  count,
-  active,
-  onClick,
-}: {
+type FilterTabItem = {
   label: string;
   count: number;
-  active: boolean;
-  onClick: () => void;
+  value: FilterType;
+};
+
+function FilterSegmentedTabs({
+  items,
+  active,
+  onChange,
+}: {
+  items: FilterTabItem[];
+  active: FilterType;
+  onChange: (value: FilterType) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Record<FilterType, HTMLButtonElement | null>>({
+    all: null,
+    uncleared: null,
+    cleared: null,
+  });
+  const [chipStyle, setChipStyle] = useState<{ left: number; width: number; opacity: number }>({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  });
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const container = containerRef.current;
+      const button = buttonRefs.current[active];
+      if (!container || !button) return;
+      setChipStyle({
+        left: button.offsetLeft,
+        width: button.offsetWidth,
+        opacity: 1,
+      });
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [active, items]);
+
   return (
-    <button
-      onClick={onClick}
-      className={`flex h-[36px] items-center gap-[4px] rounded-full px-[10px] text-[12px] leading-none whitespace-nowrap transition-colors ${
-        active
-          ? 'bg-[rgba(51,155,201,0.2)] text-[#0371a4]'
-          : 'bg-white text-[rgba(13,14,18,0.4)]'
-      }`}
-    >
-      <span className="font-['Hiragino_Sans',sans-serif] font-normal">
-        {label}
-      </span>
-      <span className={`font-['Hiragino_Sans',sans-serif] font-bold ${active ? 'text-[#0371a4]' : 'text-[rgba(13,14,18,0.6)]'}`}>
-        {count}
-      </span>
-    </button>
+    <div ref={containerRef} className="relative flex h-[60px] items-center gap-[8px] bg-white px-[16px] py-[12px]">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-[12px] h-[36px] rounded-full bg-[rgba(51,155,201,0.2)] transition-[left,width,opacity] duration-300 ease-out"
+        style={{
+          left: chipStyle.left,
+          width: chipStyle.width,
+          opacity: chipStyle.opacity,
+        }}
+      />
+      {items.map((item) => {
+        const isActive = item.value === active;
+        return (
+          <button
+            key={item.value}
+            ref={(node) => {
+              buttonRefs.current[item.value] = node;
+            }}
+            onClick={() => onChange(item.value)}
+            className="relative z-10 flex h-[36px] items-center gap-[4px] rounded-full px-[12px] text-[12px] leading-none whitespace-nowrap transition-colors"
+          >
+            <span className={`font-['Hiragino_Sans',sans-serif] ${isActive ? 'text-[#0371a4]' : 'text-[rgba(13,14,18,0.4)]'}`}>
+              {item.label}
+            </span>
+            <span className={`font-['Hiragino_Sans',sans-serif] font-bold ${isActive ? 'text-[#0371a4]' : 'text-[rgba(13,14,18,0.6)]'}`}>
+              {item.count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -499,12 +610,16 @@ function ContentList({
   sections: sectionData,
   filter,
   favoritesOnly,
+  emptyMode = false,
+  emptyKey,
   onLongPress,
   onNavigate,
 }: {
   sections: DateSection[];
   filter: FilterType;
   favoritesOnly: boolean;
+  emptyMode?: boolean;
+  emptyKey?: string;
   onLongPress: (threadId: string) => void;
   onNavigate: () => void;
 }) {
@@ -520,19 +635,26 @@ function ContentList({
 
   const allThreads = filteredSections.flatMap((s) => s.threads);
 
+  if (emptyMode) {
+    const emptyKind = filter !== 'all' ? 'filtered' : favoritesOnly ? 'saved' : 'full';
+    return <QuestionBookEmptyState key={emptyKey ?? emptyKind} kind={emptyKind} />;
+  }
+
   if (favoritesOnly) {
+    if (allThreads.length === 0) {
+      return <QuestionBookEmptyState key={emptyKey ?? (filter === 'all' ? 'saved' : 'filtered')} kind={filter === 'all' ? 'saved' : 'filtered'} />;
+    }
     return (
       <div className="flex flex-col gap-[20px]">
         {allThreads.map((thread) => (
           <QuestionThreadView key={thread.id} thread={thread} onLongPress={() => onLongPress(thread.id)} onNavigate={onNavigate} />
         ))}
-        {allThreads.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-[14px] text-[rgba(13,14,18,0.4)]">該当する問題がありません</p>
-          </div>
-        )}
       </div>
     );
+  }
+
+  if (filteredSections.length === 0) {
+    return <QuestionBookEmptyState key={emptyKey ?? 'filtered'} kind="filtered" />;
   }
 
   return (
@@ -551,11 +673,6 @@ function ContentList({
           </div>
         </div>
       ))}
-      {filteredSections.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-[14px] text-[rgba(13,14,18,0.4)]">該当する問題がありません</p>
-        </div>
-      )}
     </div>
   );
 }
@@ -578,8 +695,10 @@ function getCounts(threads: QuestionThread[]) {
 
 export default function QuestionBookScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'categories' | 'favorites'>('categories');
   const [filter, setFilter] = useState<FilterType>('all');
+  const viewMode = new URLSearchParams(location.search).get('empty') as QuestionBookViewMode;
 
   // Mutable thread state — savedIds / deletedIds overlay the static sections data
   const [savedIds, setSavedIds] = useState<Set<string>>(
@@ -609,6 +728,9 @@ export default function QuestionBookScreen() {
   const favThreadList = favoriteSections.flatMap((s) => s.threads);
 
   const sheetIsSaved = sheetThreadId ? savedIds.has(sheetThreadId) : false;
+
+  const isContentMode = viewMode === 'content';
+  const fullEmptyOverride = !isContentMode;
 
   function showToast(message: string) {
     setToast({ key: Date.now(), message });
@@ -684,13 +806,19 @@ export default function QuestionBookScreen() {
 
         {/* Filter pills */}
         {(() => {
-          const counts = getCounts(activeTab === 'favorites' ? favThreadList : allThreadList);
+          const counts = fullEmptyOverride
+            ? { total: 0, uncleared: 0, cleared: 0 }
+            : getCounts(activeTab === 'favorites' ? favThreadList : allThreadList);
           return (
-            <div className="flex h-[60px] items-center gap-[8px] bg-white px-[16px] py-[12px]">
-              <FilterPill label="すべて" count={counts.total} active={filter === 'all'} onClick={() => setFilter('all')} />
-              <FilterPill label="未クリア" count={counts.uncleared} active={filter === 'uncleared'} onClick={() => setFilter('uncleared')} />
-              <FilterPill label="クリア済み" count={counts.cleared} active={filter === 'cleared'} onClick={() => setFilter('cleared')} />
-            </div>
+            <FilterSegmentedTabs
+              active={filter}
+              onChange={setFilter}
+              items={[
+                { value: 'all', label: 'すべて', count: counts.total },
+                { value: 'uncleared', label: '未クリア', count: counts.uncleared },
+                { value: 'cleared', label: 'クリア済み', count: counts.cleared },
+              ]}
+            />
           );
         })()}
 
@@ -707,11 +835,27 @@ export default function QuestionBookScreen() {
         >
           {/* カテゴリー panel */}
           <div className="w-1/2 h-full overflow-y-auto px-[20px] py-[10px]" style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 120 }}>
-            <ContentList sections={visibleSections} filter={filter} favoritesOnly={false} onLongPress={setSheetThreadId} onNavigate={() => navigate('/question-report')} />
+            <ContentList
+              sections={visibleSections}
+              filter={filter}
+              favoritesOnly={false}
+              emptyMode={fullEmptyOverride}
+              emptyKey={`history-${activeTab}-${filter}-${viewMode ?? 'default'}`}
+              onLongPress={setSheetThreadId}
+              onNavigate={() => navigate('/question-report')}
+            />
           </div>
           {/* お気に入り panel */}
           <div className="w-1/2 h-full overflow-y-auto px-[20px]" style={{ paddingTop: 30, paddingBottom: BOTTOM_NAV_HEIGHT + 120 }}>
-            <ContentList sections={favoriteSections} filter={filter} favoritesOnly={true} onLongPress={setSheetThreadId} onNavigate={() => navigate('/question-report')} />
+            <ContentList
+              sections={favoriteSections}
+              filter={filter}
+              favoritesOnly={true}
+              emptyMode={fullEmptyOverride}
+              emptyKey={`saved-${activeTab}-${filter}-${viewMode ?? 'default'}`}
+              onLongPress={setSheetThreadId}
+              onNavigate={() => navigate('/question-report')}
+            />
           </div>
         </div>
       </div>

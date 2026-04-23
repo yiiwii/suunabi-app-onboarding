@@ -1,487 +1,283 @@
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { IOS_SAFE_AREA_TOP, IOS_SAFE_AREA_BOTTOM } from './preview/device';
+import { IOS_SAFE_AREA_BOTTOM, IOS_SAFE_AREA_TOP } from './preview/device';
+import { QuestionChatComposer } from './QuestionChatScreen';
 
-import imgImage222          from '../../assets/report-image-222.png';
-import imgImage223          from '../../assets/report-image-223.png';
-import imgImage224          from '../../assets/report-image-224.png';
-import imgPose81            from '../../assets/report-pose-81.png';
-import imgGroup3276         from '../../assets/report-group-3276.svg';
-import imgPose72            from '../../assets/report-pose-72.png';
-import imgGroup3275         from '../../assets/report-group-3275.svg';
-import imgIconoirSparkSolid from '../../assets/report-spark-solid.svg';
+import imgQuestion from '../../assets/question-report-image-222.png';
+import imgSolution from '../../assets/question-report-image-224.png';
+import imgAnswer from '../../assets/question-report-image-223.png';
+import imgEvalHero from '../../assets/question-report-evaluation-hero.png';
+import imgEvalBadge from '../../assets/question-report-evaluation-badge.png';
 
-// ── Step card ─────────────────────────────────────────────────────────────────
+const NAV_HEIGHT = IOS_SAFE_AREA_TOP + 60;
+
 function StepCard({
   stepNum,
-  open,
-  onToggle,
+  expanded,
+  title,
+  body,
 }: {
   stepNum: number;
-  open: boolean;
-  onToggle: () => void;
+  expanded: boolean;
+  title: string;
+  body: string[];
 }) {
-  const stepContent = [
-    {
-      intro: '方程の両辺を整理して、xの項を左辺に集めます。',
-      bullets: ['両辺に 2x を加える：3x − 3 = 5', '両辺に 3 を加える：3x = 8', '3 で割る：x = 8/3'],
-    },
-    {
-      intro: '式を因数分解して、共通因数を括り出します。',
-      bullets: ['共通因数を見つける：4(x² + 5x + 4)', '因数分解：4(x + 1)(x + 4)', '解を求める：x = −1, x = −4'],
-    },
-    {
-      intro: '検算として、求めた解を元の方程式に代入して確認します。',
-      bullets: ['x = −1 を代入して確認', 'x = −4 を代入して確認', '両方とも成立することを確認'],
-    },
-  ];
-  const { intro, bullets } = stepContent[stepNum - 1];
-
   return (
-    <div className="bg-white rounded-[10px] overflow-hidden w-[335px] shrink-0">
-      {/* Header */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-[10px] py-[8px] h-[40px]"
-        style={{ background: '#339bc9' }}
-      >
-        <span
-          className="font-['Hiragino_Sans',sans-serif] font-bold text-[16px] text-white leading-none"
-        >
-          Step{stepNum}
+    <div className="overflow-hidden rounded-[10px] bg-[var(--token-color-background-secondary,#fff)]">
+      <div className="flex h-[40px] items-center justify-between bg-[var(--token-color-accent-primary,#339bc9)] px-[10px] py-[8px]">
+        <div className="flex items-center gap-[10px]">
+          <span className="font-['Hiragino_Sans',sans-serif] text-[16px] font-bold leading-none text-[var(--token-color-background-secondary,#fff)]">
+            Step{stepNum}
+          </span>
+          <span className="flex items-center gap-[4px] rounded-[999px] bg-[var(--token-color-green-20,#a2ffe833)] px-[8px] py-[2px] text-[var(--token-color-success,#249176)]">
+            <span className="font-['Rco',sans-serif] text-[14px] leading-none">{'\uE94A'}</span>
+            <span className="font-['Hiragino_Sans',sans-serif] text-[14px] leading-none">正解</span>
+          </span>
+        </div>
+        <span className="font-['Rco',sans-serif] text-[18px] leading-none text-[var(--token-color-background-secondary,#fff)]">
+          {expanded ? '\uE951' : '\uE985'}
         </span>
-        <span
-          className="font-['Rco',sans-serif] text-[18px] text-white leading-none transition-transform duration-200"
-          style={{ transform: open ? 'rotate(0deg)' : 'rotate(180deg)' }}
-        >
-          {'\uE985'}
-        </span>
-      </button>
+      </div>
 
-      {/* Collapsible body */}
-      {open && (
-        <div className="px-[10px] pb-[10px] pt-[10px] flex flex-col gap-[10px]">
-          {/* Text content */}
-          <div className="font-['Hiragino_Sans',sans-serif] text-[16px] text-[rgba(13,14,18,0.6)] leading-normal">
-            <p className="mb-[8px]">{intro}</p>
-            <ul className="list-disc pl-[20px] flex flex-col gap-[2px]">
-              {bullets.map((b, i) => (
-                <li key={i}>{b}</li>
+      {expanded && (
+        <div className="space-y-[10px] px-[10px] pb-[10px] pt-[10px]">
+          <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-[var(--token-color-black-60,#0d0e1299)]">
+            {title}
+          </p>
+          <div className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-[var(--token-color-black-60,#0d0e1299)]">
+            <ul className="list-disc pl-[20px]">
+              {body.map((item) => (
+                <li key={item} className="mb-[2px]">
+                  {item}
+                </li>
               ))}
             </ul>
           </div>
-          {/* LaTeX image */}
-          <div className="w-full overflow-hidden rounded-[4px]">
-            <img src={imgImage223} alt="" className="w-[200px] h-[28px] object-cover" />
-          </div>
-          {/* Reason button */}
-          <div className="flex items-center">
-            <div
-              className="px-[6px] py-[2px] rounded-[100px] font-['Hiragino_Sans',sans-serif] text-[14px]"
-              style={{ background: '#f2fbff', color: '#0371a4' }}
-            >
-              その理由は？
-            </div>
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-// ── Feedback widget ────────────────────────────────────────────────────────────
-function FeedbackWidget() {
-  const [voted, setVoted] = useState<'yes' | 'no' | null>(null);
+function AnswerEvaluationCard() {
   return (
-    <div
-      className="bg-white border rounded-[20px] p-[20px] flex flex-col gap-[12px] items-center w-[335px] shrink-0"
-      style={{ borderColor: '#cce5f2' }}
-    >
-      {/* Character illustration */}
-      <div className="relative size-[100px] shrink-0">
-        <img src={imgPose81} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <img
-          src={imgGroup3276}
-          alt=""
-          className="absolute"
-          style={{ left: '28%', top: '20%', width: '54%', height: '23%' }}
-        />
-      </div>
-      <p
-        className="font-['Hiragino_Sans',sans-serif] text-[16px] text-center leading-normal w-full"
-        style={{ color: '#339bc9' }}
-      >
-        この情報は役に立ちましたか？
-      </p>
-      {voted === null ? (
-        <div className="flex gap-[10px]">
-          <button
-            onClick={() => setVoted('yes')}
-            className="flex-1 flex items-center justify-center gap-[4px] px-[20px] py-[6px] rounded-[12px] border font-['Hiragino_Sans',sans-serif] text-[14px] border-b-4"
-            style={{
-              background: '#f2fbff',
-              borderColor: '#cce5f2',
-              color: '#339bc9',
-            }}
-          >
-            <span className="font-['Rco',sans-serif]">{'\uE965'}</span>
-            <span>はい</span>
-          </button>
-          <button
-            onClick={() => setVoted('no')}
-            className="flex-1 flex items-center justify-center gap-[4px] px-[20px] py-[6px] rounded-[12px] border font-['Hiragino_Sans',sans-serif] text-[14px] border-b-4"
-            style={{
-              background: '#f2fbff',
-              borderColor: '#cce5f2',
-              color: '#339bc9',
-            }}
-          >
-            <span className="font-['Rco',sans-serif]">{'\uE961'}</span>
-            <span>いいえ</span>
-          </button>
-        </div>
-      ) : (
-        <p
-          className="font-['Hiragino_Sans',sans-serif] text-[14px] text-center"
-          style={{ color: '#339bc9' }}
-        >
-          {voted === 'yes' ? 'フィードバックありがとう！' : 'ご意見ありがとうございます'}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── Chat panel ─────────────────────────────────────────────────────────────────
-function ChatPanel({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="absolute inset-x-0 bottom-0 bg-white rounded-t-[20px] overflow-hidden flex flex-col"
-      style={{
-        height: 529,
-        boxShadow: '0px -4px 20px 0px rgba(0,0,0,0.1)',
-      }}
-    >
-      {/* Chat nav bar */}
-      <div className="flex items-center px-[10px] py-[14px] h-[60px] shrink-0">
-        <button
-          onClick={onClose}
-          className="w-[40px] h-[40px] flex items-center justify-center rounded-full"
-        >
-          <span className="font-['Rco',sans-serif] text-[24px] leading-none" style={{ color: 'rgba(13,14,18,0.8)' }}>
-            {'\uE92A'}
-          </span>
-        </button>
-        <div className="flex-1 text-center font-['Hiragino_Sans',sans-serif] font-semibold text-[18px]" style={{ color: 'rgba(13,14,18,0.8)' }}>
-          すう先生に質問する
-        </div>
-        <button className="w-[40px] h-[40px] flex items-center justify-center rounded-full">
-          <span className="font-['Rco',sans-serif] text-[24px] leading-none" style={{ color: 'rgba(13,14,18,0.8)' }}>
-            {'\uE951'}
-          </span>
-        </button>
-      </div>
-
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto px-[20px] pb-[20px] flex flex-col gap-[20px]">
-        {/* AI avatar */}
-        <div className="relative size-[100px] shrink-0">
-          <img src={imgPose72} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <img
-            src={imgGroup3275}
-            alt=""
-            className="absolute"
-            style={{ left: '26%', top: '22%', width: '55%', height: '27%' }}
-          />
-        </div>
-        {/* Greeting */}
-        <p className="font-['Hiragino_Sans',sans-serif] text-[16px]" style={{ color: 'rgba(13,14,18,0.8)' }}>
-          こんにちは！すう先生です。何でも聞いてください。
-        </p>
-        {/* User message */}
-        <div className="flex justify-end">
-          <div
-            className="max-w-[280px] p-[10px] rounded-tl-[12px] rounded-bl-[12px] rounded-tr-[12px] rounded-br-[2px] font-['Hiragino_Sans',sans-serif] text-[16px] text-white"
-            style={{ background: '#339bc9' }}
-          >
-            このステップを説明してください
-          </div>
-        </div>
-        {/* AI response */}
-        <p className="font-['Hiragino_Sans',sans-serif] text-[16px]" style={{ color: 'rgba(13,14,18,0.8)' }}>
-          もちろんです！まず、方程式の両辺にある同じ項をまとめます。次にxの係数で両辺を割ることで解を求めます。
+    <div className="relative overflow-hidden rounded-[10px] border border-[var(--token-color-border-primary-2,#cce5f2)] bg-[var(--token-color-green-20,#a2ffe833)] p-[10px]">
+      <div className="flex min-h-[61px] items-center justify-center pr-[78px]">
+        <p className="font-['Hiragino_Sans',sans-serif] text-[16px] font-bold leading-none text-[var(--token-color-success,#249176)]">
+          完全に正解！
         </p>
       </div>
-
-      {/* Chat input */}
-      <div
-        className="shrink-0 flex items-center px-[20px] py-[10px] border-t"
-        style={{ borderColor: '#cce5f2', paddingBottom: IOS_SAFE_AREA_BOTTOM + 10 }}
-      >
-        <div
-          className="flex-1 flex items-center gap-[4px] bg-white border rounded-[24px] pl-[16px] pr-[8px] h-[40px]"
-          style={{ borderColor: '#339bc9' }}
-        >
-          <img src={imgIconoirSparkSolid} alt="" className="w-[18px] h-[18px] shrink-0" />
-          <span
-            className="flex-1 font-['Hiragino_Sans',sans-serif] text-[14px] leading-none"
-            style={{ color: 'rgba(3,113,164,0.4)' }}
-          >
-            メッセージを入力
-          </span>
-          <span className="font-['Rco',sans-serif] text-[20px]" style={{ color: '#339bc9' }}>
-            {'\uE96F'}
-          </span>
-        </div>
+      <div className="pointer-events-none absolute right-[-2px] top-[-2px] h-[81px] w-[80px]">
+        <img src={imgEvalHero} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={imgEvalBadge} alt="" className="absolute right-[-2px] top-[-2px] h-[80px] w-[80px] object-cover" />
       </div>
     </div>
   );
 }
 
-// ── Main screen ────────────────────────────────────────────────────────────────
-function ReportToast({ message, onDone }: { message: string; onDone: () => void }) {
+function ReviewButton({
+  primary,
+  icon,
+  children,
+}: {
+  primary?: boolean;
+  icon: string;
+  children: ReactNode;
+}) {
   return (
-    <div
-      className="absolute left-1/2 top-1/2 z-50 flex items-center gap-[12px] rounded-[8px] px-[20px] py-[10px] pointer-events-none"
-      style={{
-        background: 'rgba(13,14,18,0.8)',
-        backdropFilter: 'blur(25px)',
-        maxWidth: 280,
-        animation: 'toast-in-out 2.5s ease both',
-      }}
-      onAnimationEnd={onDone}
+    <button
+      type="button"
+      className={`flex min-h-[92px] flex-1 flex-col items-center justify-center gap-[8px] rounded-[12px] border-b-[4px] p-[12px] ${
+        primary
+          ? 'border border-[var(--token-color-border-primary-2,#cce5f2)] bg-[var(--token-color-accent-primary,#339bc9)] text-[var(--token-color-background-secondary,#fff)]'
+          : 'border border-[var(--token-color-border-primary-2,#cce5f2)] bg-[var(--token-color-background-primary,#f2fbff)] text-[var(--token-color-accent-primary,#339bc9)]'
+      }`}
     >
-      <span className="font-['Rco',sans-serif] text-[24px] leading-none text-white shrink-0">{'\uE92B'}</span>
-      <span className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-white">{message}</span>
-    </div>
+      <span className="font-['Rco',sans-serif] text-[24px] leading-none">{icon}</span>
+      <span className="font-['Hiragino_Sans',sans-serif] text-[16px] font-bold leading-none">
+        {children}
+      </span>
+    </button>
   );
 }
 
 export default function QuestionReportScreen() {
   const navigate = useNavigate();
-  const [openSteps, setOpenSteps] = useState<Set<number>>(new Set([1, 2, 3]));
-  const [chatOpen, setChatOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [toast, setToast] = useState<{ key: number; message: string } | null>(null);
-  const [exiting, setExiting] = useState(false);
-
-  function handleBack() {
-    setExiting(true);
-  }
-
-  function handleBookmark() {
-    if (saved) {
-      setSaved(false);
-      setToast({ key: Date.now(), message: '収藏取消！' });
-    } else {
-      setSaved(true);
-      setToast({ key: Date.now(), message: '收藏成功！请在收藏夹查看' });
-    }
-    setTimeout(() => setToast(null), 2600);
-  }
-
-  function toggleStep(n: number) {
-    setOpenSteps(prev => {
-      const next = new Set(prev);
-      if (next.has(n)) next.delete(n);
-      else next.add(n);
-      return next;
-    });
-  }
-
-  const NAV_HEIGHT = IOS_SAFE_AREA_TOP + 60;
+  const [openSteps] = useState<Set<number>>(new Set([1, 2, 3]));
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden"
-      style={{
-        background: '#f2fbff',
-        animation: exiting
-          ? 'slide-out-to-right 300ms cubic-bezier(0.4,0,0.2,1) both'
-          : 'slide-in-from-right 300ms cubic-bezier(0.4,0,0.2,1) both',
-      }}
-      onAnimationEnd={() => { if (exiting) navigate(-1); }}
-    >
-
-      {/* ── Nav bar ──────────────────────────────────────────────────────────── */}
+    <div className="relative h-full w-full overflow-hidden bg-[var(--token-color-background-primary,#f2fbff)]">
       <div
-        className="absolute inset-x-0 top-0 z-10 flex items-end"
-        style={{ height: NAV_HEIGHT, background: '#f2fbff', paddingBottom: 0 }}
+        className="absolute inset-x-0 top-0 z-10 flex items-end bg-[var(--token-color-background-primary,#f2fbff)]"
+        style={{ height: NAV_HEIGHT }}
       >
-        <div className="flex items-center w-full px-[10px] h-[60px]">
+        <div className="flex h-[60px] w-full items-center px-[10px]">
           <button
-            onClick={handleBack}
-            className="w-[40px] h-[40px] flex items-center justify-center rounded-full"
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex size-[40px] items-center justify-center rounded-full"
           >
-            <span className="font-['Rco',sans-serif] text-[24px] leading-none" style={{ color: 'rgba(13,14,18,0.8)' }}>
+            <span className="font-['Rco',sans-serif] text-[24px] leading-none text-[var(--token-color-black-80,#0d0e12cc)]">
               {'\uE92A'}
             </span>
           </button>
-          <div
-            className="flex-1 text-center font-['Hiragino_Sans',sans-serif] font-semibold text-[18px] leading-none"
-            style={{ color: 'rgba(13,14,18,0.8)' }}
-          >
-            一元三次方程
+
+          <div className="flex-1 text-center">
+            <div className="font-['Hiragino_Sans',sans-serif] text-[18px] font-semibold leading-none text-[var(--token-color-black-80,#0d0e12cc)]">
+              一元三次方程
+            </div>
           </div>
-          {/* Bookmark toggle */}
+
           <button
-            onClick={handleBookmark}
-            className="w-[40px] h-[40px] flex items-center justify-center rounded-full"
+            type="button"
+            className="flex size-[40px] items-center justify-center rounded-full"
+            aria-hidden="true"
+            tabIndex={-1}
           >
-            <span
-              className="font-['Rco',sans-serif] text-[22px] leading-none"
-              style={{ color: saved ? '#339bc9' : 'rgba(13,14,18,0.4)' }}
-            >
-              {saved ? '\uE9EF' : '\uE9F0'}
+            <span className="font-['Rco',sans-serif] text-[24px] leading-none text-[var(--token-color-black-80,#0d0e12cc)] opacity-0">
+              {'\uE92A'}
             </span>
           </button>
         </div>
       </div>
 
-      {/* ── Scrollable content ───────────────────────────────────────────────── */}
       <div
         className="absolute inset-x-0 bottom-0 overflow-y-auto"
-        style={{ top: NAV_HEIGHT }}
+        style={{ top: NAV_HEIGHT, paddingBottom: 84 + IOS_SAFE_AREA_BOTTOM }}
       >
-        <div className="flex flex-col items-center gap-[30px] px-[20px] pb-[120px] pt-[10px]">
-
-          {/* Question card */}
-          <div className="bg-white rounded-[10px] w-[335px] shrink-0 flex flex-col gap-[10px] px-[10px] py-[14px]">
-            <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal" style={{ color: 'rgba(13,14,18,0.6)' }}>
+        <div className="flex flex-col items-center gap-[30px] px-[20px] pb-[20px] pt-[10px]">
+          <div className="w-[335px] rounded-[10px] bg-[var(--token-color-background-secondary,#fff)] px-[10px] py-[14px]">
+            <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-[var(--token-color-black-60,#0d0e1299)]">
               次の方程式を解きなさい：
             </p>
-            <div className="flex justify-center">
-              <img src={imgImage222} alt="equation" className="h-[69px] object-contain" />
+            <div className="flex justify-center py-[10px]">
+              <img src={imgQuestion} alt="question" className="h-[69px] object-contain" />
             </div>
-            <div className="rounded-[4px] overflow-hidden w-full">
-              <img src={imgImage224} alt="solution" className="w-full object-contain" />
+            <div className="overflow-hidden rounded-[4px]">
+              <img src={imgSolution} alt="solution" className="w-full object-contain" />
             </div>
           </div>
 
-          {/* 解き方のポイント */}
-          <div className="flex flex-col gap-[10px] w-[335px] shrink-0">
-            <p className="font-['Hiragino_Sans',sans-serif] font-semibold text-[18px] leading-none" style={{ color: '#0371a4' }}>
+          <div className="flex w-[335px] flex-col gap-[10px]">
+            <p className="font-['Hiragino_Sans',sans-serif] text-[18px] font-semibold leading-none text-[var(--token-color-accent-primary-shadow,#0371a4)]">
+              解答の評価
+            </p>
+            <AnswerEvaluationCard />
+          </div>
+
+          <div className="flex w-[335px] flex-col gap-[10px]">
+            <p className="font-['Hiragino_Sans',sans-serif] text-[18px] font-semibold leading-none text-[var(--token-color-accent-primary-shadow,#0371a4)]">
               解き方のポイント
             </p>
-            <div className="bg-white rounded-[10px] px-[10px] py-[14px]">
-              <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-relaxed" style={{ color: 'rgba(13,14,18,0.6)' }}>
-                一元三次方程を解くには、方程式の片方だけに未知数 x が残るように整理する必要があります。
+            <div className="rounded-[10px] bg-[var(--token-color-background-secondary,#fff)] px-[10px] py-[14px]">
+              <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-[var(--token-color-black-60,#0d0e1299)]">
+                要解答一元三次方程，我们需要使得左右只有一边有未知数x
               </p>
             </div>
           </div>
 
-          {/* ステップ解説 */}
-          <div className="flex flex-col gap-[10px] w-[335px] shrink-0">
-            <div className="flex items-center justify-between w-full">
-              <p className="font-['Hiragino_Sans',sans-serif] font-semibold text-[18px] leading-none" style={{ color: '#0371a4' }}>
+          <div className="flex w-[335px] flex-col gap-[10px]">
+            <div className="flex items-center justify-between">
+              <p className="font-['Hiragino_Sans',sans-serif] text-[18px] font-semibold leading-none text-[var(--token-color-accent-primary-shadow,#0371a4)]">
                 ステップ解説
               </p>
               <button
-                className="flex items-center gap-[4px] px-[8px] py-[3px] rounded-[100px] font-['Hiragino_Sans',sans-serif] text-[13px]"
-                style={{ background: '#cce5f2', color: '#0371a4' }}
+                type="button"
+                className="flex items-center gap-[2px] rounded-[100px] bg-[var(--token-color-background-primary,#f2fbff)] px-[6px] py-[2px] text-[var(--token-color-accent-primary-shadow,#0371a4)]"
               >
-                <span>別の解き方</span>
-                <span className="font-['Rco',sans-serif] text-[12px]">{'\uE952'}</span>
+                <span className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-none">別の解き方</span>
+                <span className="font-['Rco',sans-serif] text-[12px] leading-none">{'\uE952'}</span>
               </button>
             </div>
+
             <div className="flex flex-col gap-[10px]">
-              {[1, 2, 3].map(n => (
+              <div className="w-full">
                 <StepCard
-                  key={n}
-                  stepNum={n}
-                  open={openSteps.has(n)}
-                  onToggle={() => toggleStep(n)}
+                  stepNum={1}
+                  expanded={openSteps.has(1)}
+                  title="両辺から適切な因数を取り出す"
+                  body={['両辺から適切な因数を取り出す']}
                 />
-              ))}
+              </div>
+              <div className="w-full">
+                <StepCard
+                  stepNum={2}
+                  expanded={openSteps.has(2)}
+                  title="対两边拆解出合理的因子"
+                  body={['两边加上 2x：3x - 3 = 5', '两边加 3：3x = 8', '除以 3：x = 8/3']}
+                />
+              </div>
+              <div className="w-full">
+                <StepCard
+                  stepNum={3}
+                  expanded={openSteps.has(3)}
+                  title="両辺から適切な因数を取り出す"
+                  body={['両辺から適切な因数を取り出す']}
+                />
+              </div>
             </div>
           </div>
 
-          {/* 解答 */}
-          <div className="flex flex-col gap-[10px] w-[335px] shrink-0">
-            <p className="font-['Hiragino_Sans',sans-serif] font-semibold text-[18px] leading-none" style={{ color: '#0371a4' }}>
+          <div className="flex w-[335px] flex-col gap-[10px]">
+            <p className="font-['Hiragino_Sans',sans-serif] text-[18px] font-semibold leading-none text-[var(--token-color-accent-primary-shadow,#0371a4)]">
               解答
             </p>
-            <div className="bg-white rounded-[10px] px-[10px] py-[14px] flex flex-col gap-[10px]">
-              <img src={imgImage223} alt="answer" className="h-[28px] object-contain self-start" />
-              <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-relaxed" style={{ color: 'rgba(13,14,18,0.6)' }}>
-                よって、x = 8/3 が解となります。
+            <div className="rounded-[10px] bg-[var(--token-color-background-secondary,#fff)] px-[10px] py-[14px]">
+              <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-[var(--token-color-black-60,#0d0e1299)]">
+                要解答一元三次方程，我们需要使得左右只有一边有未知数x
               </p>
+              <div className="pt-[10px]">
+                <img src={imgAnswer} alt="answer" className="h-[28px] object-contain" />
+              </div>
             </div>
           </div>
 
-          {/* 復習 */}
-          <div className="flex flex-col gap-[10px] w-[335px] shrink-0">
-            <p className="font-['Hiragino_Sans',sans-serif] font-semibold text-[18px] leading-none" style={{ color: '#0371a4' }}>
+          <div className="flex w-[335px] flex-col gap-[10px]">
+            <p className="font-['Hiragino_Sans',sans-serif] text-[18px] font-semibold leading-none text-[var(--token-color-accent-primary-shadow,#0371a4)]">
               復習
             </p>
-            <button
-              className="w-full h-[56px] rounded-[12px] flex items-center justify-center font-['Hiragino_Sans',sans-serif] font-bold text-[16px] text-white border-b-4"
-              style={{ background: '#339bc9', borderColor: '#0371a4' }}
-            >
-              もう1問練習
-            </button>
-            <button
-              className="w-full h-[56px] rounded-[12px] flex items-center justify-center font-['Hiragino_Sans',sans-serif] font-bold text-[16px] border border-b-4"
-              style={{ color: '#339bc9', borderColor: 'rgba(51,155,201,0.2)' }}
-            >
-              別の解き方
-            </button>
-          </div>
-
-          {/* Feedback */}
-          <FeedbackWidget />
-
-        </div>
-      </div>
-
-      {/* ── Bottom input bar ─────────────────────────────────────────────────── */}
-      <div
-        className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center"
-        style={{
-          background: 'linear-gradient(to top, white 60%, rgba(255,255,255,0))',
-          paddingBottom: IOS_SAFE_AREA_BOTTOM + 10,
-        }}
-      >
-        <div className="pt-[10px] px-[20px] w-full flex items-center">
-          <button
-            onClick={() => setChatOpen(true)}
-            className="flex-1 flex items-center gap-[6px] bg-white border rounded-[24px] pl-[16px] pr-[8px] h-[48px]"
-            style={{ borderColor: '#339bc9' }}
-          >
-            <img src={imgIconoirSparkSolid} alt="" className="w-[22px] h-[22px] shrink-0" />
-            <span
-              className="flex-1 font-['Hiragino_Sans',sans-serif] text-[16px] text-left leading-none"
-              style={{ color: 'rgba(3,113,164,0.4)' }}
-            >
-              すう先生に質問する
-            </span>
-            <div className="w-[34px] h-[34px] flex items-center justify-center rounded-full">
-              <span className="font-['Rco',sans-serif] text-[24px] leading-none" style={{ color: '#339bc9' }}>
-                {'\uE96F'}
-              </span>
+            <div className="flex gap-[20px]">
+              <ReviewButton icon={'\uE9A4'}>別の解き方</ReviewButton>
+              <ReviewButton primary icon={'\uE98A'}>
+                もう1問練習
+              </ReviewButton>
             </div>
-          </button>
+          </div>
+
+          <div className="w-[335px] rounded-[20px] border border-[var(--token-color-border-primary-2,#cce5f2)] bg-[var(--token-color-background-secondary,#fff)] p-[20px]">
+            <div className="flex flex-col items-center gap-[12px]">
+              <div className="relative size-[100px]">
+                <img src={imgEvalHero} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                <img src={imgEvalBadge} alt="" className="absolute right-[-2px] top-[-2px] h-[80px] w-[80px] object-cover" />
+              </div>
+              <p className="font-['Hiragino_Sans',sans-serif] text-[16px] leading-normal text-[var(--token-color-accent-primary,#339bc9)]">
+                この情報は役に立ちましたか？
+              </p>
+              <div className="flex w-full gap-[10px]">
+                <button
+                  type="button"
+                  className="flex-1 rounded-[12px] border border-[var(--token-color-border-primary-2,#cce5f2)] border-b-[4px] bg-[var(--token-color-background-primary,#f2fbff)] px-[20px] py-[4px] text-[14px] text-[var(--token-color-accent-primary,#339bc9)]"
+                >
+                  <span className="mr-[4px] font-['Rco',sans-serif]">{'\uE965'}</span>
+                  <span className="font-['Hiragino_Sans',sans-serif]">はい</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 rounded-[12px] border border-[var(--token-color-border-primary-2,#cce5f2)] border-b-[4px] bg-[var(--token-color-background-primary,#f2fbff)] px-[20px] py-[4px] text-[14px] text-[var(--token-color-accent-primary,#339bc9)]"
+                >
+                  <span className="mr-[4px] font-['Rco',sans-serif]">{'\uE961'}</span>
+                  <span className="font-['Hiragino_Sans',sans-serif]">いいえ</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── Bookmark toast ───────────────────────────────────────────────────── */}
-      {toast && (
-        <ReportToast key={toast.key} message={toast.message} onDone={() => setToast(null)} />
-      )}
-
-      {/* ── Chat panel overlay ───────────────────────────────────────────────── */}
-      {chatOpen && (
-        <>
-          <div
-            className="absolute inset-0 z-20 bg-black/30"
-            onClick={() => setChatOpen(false)}
-          />
-          <div className="absolute inset-x-0 bottom-0 z-30" style={{ height: 529 }}>
-            <ChatPanel onClose={() => setChatOpen(false)} />
-          </div>
-        </>
-      )}
-
+      <div className="absolute inset-x-0 bottom-0 z-20">
+        <QuestionChatComposer />
+      </div>
     </div>
   );
 }

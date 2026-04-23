@@ -177,7 +177,7 @@ export default function TrialPaywall() {
 
           <button
             className="relative mt-5 flex h-14 w-full items-center justify-center rounded-[var(--token-radius-button)] bg-[var(--token-color-accent-primary)] px-3 text-white shadow-[var(--token-shadow-primary-inset)]"
-            onClick={() => console.log('Start trial')}
+            onClick={() => navigate('/home-v2')}
             type="button"
           >
             <div className="flex flex-col items-center">

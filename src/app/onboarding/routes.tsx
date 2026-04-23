@@ -5,6 +5,7 @@ import Intro1WithNavigation from "../components/Intro1WithNavigation";
 import Intro2WithNavigation from "../components/Intro2WithNavigation";
 import Intro3WithNavigation from "../components/Intro3WithNavigation";
 import Intro4WithNavigation from "../components/Intro4WithNavigation";
+import HomeTutorialFlowScreen from "../components/HomeTutorialFlowScreen";
 import GradeSelection from "../components/GradeSelection";
 import GradeSelectionEmpty from "../components/GradeSelectionEmpty";
 import GradeSelectionWithNavigation from "../components/GradeSelectionWithNavigation";
@@ -16,6 +17,7 @@ import TrialPaywall from "../components/TrialPaywall";
 import TrialPaywallB from "../components/TrialPaywallB";
 import ProductHomeV2 from "../components/ProductHomeV2";
 import QuestionBookScreen from "../components/QuestionBookScreen";
+import QuestionChatScreen from "../components/QuestionChatScreen";
 import SettingsScreen from "../components/SettingsScreen";
 import SettingsScreenUnsubscribed from "../components/SettingsScreenUnsubscribed";
 import InviteFriendsScreen from "../components/InviteFriendsScreen";
@@ -47,8 +49,16 @@ export function createOnboardingRouter(showDebug = true, deviceWidth = 375) {
           Component: ProductHomeV2,
         },
         {
+          path: "home-tutorial",
+          Component: HomeTutorialFlowScreen,
+        },
+        {
           path: "question-book",
           Component: QuestionBookScreen,
+        },
+        {
+          path: "question-chat",
+          Component: QuestionChatScreen,
         },
         {
           path: "settings",

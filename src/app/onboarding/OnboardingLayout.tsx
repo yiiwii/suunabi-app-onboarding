@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useOutlet } from 'react-router';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DebugPanel } from '../components/debug/DebugPanel';
 import { Switch } from '../components/ui/switch';
 import {
@@ -20,58 +20,33 @@ interface OnboardingLayoutProps {
   deviceWidth?: number;
 }
 
-type LayerState = {
-  key: string;
-  element: ReactNode;
-};
-
 function PageTransitionOutlet() {
   const outlet = useOutlet();
-  const location = useLocation();
-  const [activeLayer, setActiveLayer] = useState<LayerState>({
-    key: location.key,
-    element: outlet,
-  });
-  const [previousLayer, setPreviousLayer] = useState<LayerState | null>(null);
-  const activeLayerRef = useRef(activeLayer);
-
-  useEffect(() => {
-    activeLayerRef.current = activeLayer;
-  }, [activeLayer]);
-
-  useEffect(() => {
-    const current = activeLayerRef.current;
-    if (location.key === current.key) return;
-
-    setPreviousLayer(current);
-    setActiveLayer({ key: location.key, element: outlet });
-
-    const timeout = window.setTimeout(() => {
-      setPreviousLayer(null);
-    }, 280);
-
-    return () => window.clearTimeout(timeout);
-  }, [location.key, outlet]);
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {previousLayer && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ ...designTokenVars, animation: 'page-dissolve-out 280ms ease-out both' }}
-        >
-          {previousLayer.element}
-        </div>
-      )}
-      <div
-        key={activeLayer.key}
-        className="absolute inset-0"
-        style={{ ...designTokenVars, animation: 'page-dissolve-in 280ms ease-out both' }}
-      >
-        {activeLayer.element}
+      <div className="absolute inset-0" style={designTokenVars}>
+        {outlet}
       </div>
     </div>
   );
+}
+
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+
+  return isMobile;
 }
 
 /**
@@ -84,9 +59,76 @@ function PageTransitionOutlet() {
 export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WIDTH }: OnboardingLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobileViewport();
   const isCameraReview = location.pathname === '/camera-review';
   const searchParams = new URLSearchParams(location.search);
   const showHitAreas = searchParams.has('hitareas');
+  const layoutRef = useRef<HTMLDivElement | null>(null);
+  const splitDragRef = useRef<{ startX: number; startRatio: number } | null>(null);
+  const [layoutWidth, setLayoutWidth] = useState(0);
+  const [splitRatio, setSplitRatio] = useState(0.58);
+
+  useEffect(() => {
+    const node = layoutRef.current;
+    if (!node || typeof ResizeObserver === 'undefined') return;
+
+    const update = () => setLayoutWidth(node.clientWidth);
+    update();
+
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    function onMove(event: PointerEvent) {
+      if (!splitDragRef.current || !layoutWidth) return;
+
+      const { startX, startRatio } = splitDragRef.current;
+      const available = Math.max(layoutWidth, 0);
+      if (!available) return;
+
+      const minLeft = 420;
+      const minRight = 360;
+      const handleWidth = 18;
+      const maxLeft = Math.max(minLeft, available - minRight - handleWidth);
+      const delta = event.clientX - startX;
+      const nextLeft = Math.min(maxLeft, Math.max(minLeft, available * startRatio + delta));
+      const nextRatio = (nextLeft / available) || startRatio;
+
+      setSplitRatio(Math.min(0.72, Math.max(0.42, nextRatio)));
+    }
+
+    function onUp() {
+      splitDragRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [layoutWidth]);
+
+  const minLeft = 420;
+  const minRight = 360;
+  const handleWidth = 18;
+  const availableWidth = Math.max(layoutWidth, 0);
+  const maxLeft = availableWidth ? Math.max(minLeft, availableWidth - minRight - handleWidth) : minLeft;
+  const leftPaneWidth = availableWidth
+    ? Math.min(maxLeft, Math.max(minLeft, Math.round(availableWidth * splitRatio)))
+    : 720;
+
+  if (isMobile) {
+    return (
+      <div className="min-h-[100dvh] w-full overflow-hidden bg-white" style={designTokenVars}>
+        <PageTransitionOutlet />
+      </div>
+    );
+  }
 
   if (!showDebug) {
     return (
@@ -98,9 +140,12 @@ export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WI
 
   return (
     <div className="min-h-screen overflow-x-auto bg-[linear-gradient(180deg,#eef4f8_0%,#f7f9fb_100%)] px-5 py-6 sm:px-6 sm:py-8">
-      <div className="mx-auto max-w-[1260px]">
-        <div className="grid items-start gap-8 xl:grid-cols-[minmax(420px,1fr)_380px]">
-          <div className="flex min-h-[calc(100vh-48px)] items-center justify-center rounded-[32px] border border-white/70 bg-[rgba(255,255,255,0.45)] p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+      <div ref={layoutRef} className="w-full">
+        <div className="flex items-stretch gap-4">
+          <div
+            className="flex min-h-[calc(100vh-48px)] shrink-0 items-center justify-center rounded-[32px] border border-white/70 bg-[rgba(255,255,255,0.45)] p-8 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm"
+            style={{ width: leftPaneWidth }}
+          >
             <div className="relative">
               {isCameraReview && (
                 <div className="absolute right-0 top-[-52px] flex items-center gap-3 rounded-full border border-white/80 bg-white/92 px-4 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.10)] backdrop-blur">
@@ -148,7 +193,28 @@ export function OnboardingLayout({ showDebug = true, deviceWidth = IOS_DEVICE_WI
             </div>
           </div>
 
-          <aside className="xl:sticky xl:top-6">
+          <button
+            type="button"
+            aria-label="Resize split view"
+            className="group relative mt-6 flex h-[calc(100vh-96px)] w-[18px] shrink-0 cursor-col-resize items-center justify-center"
+            onPointerDown={event => {
+              event.preventDefault();
+              splitDragRef.current = { startX: event.clientX, startRatio: splitRatio };
+              document.body.style.cursor = 'col-resize';
+              document.body.style.userSelect = 'none';
+            }}
+          >
+            <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-slate-300/70 transition-colors group-hover:bg-slate-500/70" />
+            <span className="relative flex h-9 w-5 items-center justify-center rounded-full border border-white/80 bg-white/90 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur">
+              <span className="grid gap-[3px]">
+                <span className="block h-[2px] w-2 rounded-full bg-slate-400" />
+                <span className="block h-[2px] w-2 rounded-full bg-slate-400" />
+                <span className="block h-[2px] w-2 rounded-full bg-slate-400" />
+              </span>
+            </span>
+          </button>
+
+          <aside className="min-w-0 flex-1 xl:sticky xl:top-6">
             <div className="max-h-[calc(100vh-48px)] overflow-hidden rounded-[28px] border border-white/80 bg-white/92 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur">
               <div className="mb-6">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Panel</p>

@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import Lottie from 'lottie-react';
 import { useNavigate } from 'react-router';
-import successBadge from '@/assets/success-badge.png';
+import welcomeGif from '@/assets/welcome.gif';
 import successConfetti from '@/assets/success-confetti.json';
 
 function SuccessMascot({ showConfetti }: { showConfetti: boolean }) {
   return (
-    <div className="relative h-[150px] w-[150px]">
+    <div className="relative h-[150px] w-[150px] overflow-hidden rounded-full">
       {showConfetti ? (
         <div className="pointer-events-none absolute inset-1/2 z-10 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2">
           <Lottie animationData={successConfetti} autoplay loop={false} />
@@ -15,8 +15,8 @@ function SuccessMascot({ showConfetti }: { showConfetti: boolean }) {
       ) : null}
       <img
         alt=""
-        className="relative h-[150px] w-[150px] overflow-hidden rounded-full"
-        src={successBadge}
+        className="relative h-[150px] w-[150px] object-cover"
+        src={welcomeGif}
       />
     </div>
   );
